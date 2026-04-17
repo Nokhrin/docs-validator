@@ -1,13 +1,26 @@
 [project]
 name = "docs-validator"
 version = "0.0.1"
-requires-python = ">=3.11"
-dependencies = ["networkx>=2.8", "pydantic>=2.0"]
+requires-python = ">=3.13"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+]
 
 [tool.pytest.ini_options]
-addopts = "--cov=src/validator --cov-report=term-missing"
-
-[tool.ruff]
-line-length = 120
-target-version = "py311"
-select = ["E", "F", "B", "I"]
+minversion = "8.0"
+addopts = [
+    "-vv",
+    "--tb=short",
+    "--strict-markers",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

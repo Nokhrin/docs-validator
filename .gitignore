@@ -1,0 +1,6 @@
+.git/
+.idea/
+.venv/
+.pytest_cache/
+*.egg-info/
+.coverage
