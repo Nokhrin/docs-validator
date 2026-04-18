@@ -18,11 +18,8 @@
 - Генерирует отчёт в Markdown/HTML для интеграции в CI
 
 [Архитектура](docs/architecture.md)
+[Спецификация](docs/specification.md)
 
-## Быстрый старт
-```bash
-# Установка из репозитория
-pip install "docs-validator @ git+https://github.com/Nokhrin/docs-validator.git"
+---
 
-# Проверка документации
-docs-validator scan ./docs --report markdown
+[![Unit Tests](https://github.com/Nokhrin/docs-validator/actions/workflows/test.yml/badge.svg)](https://github.com/Nokhrin/docs-validator/actions/workflows/test.yml)

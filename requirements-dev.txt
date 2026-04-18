@@ -1,5 +1,4 @@
 coverage==7.13.5
--e git+ssh://git@github.com/Nokhrin/docs-validator.git@ee158cad6299ddbcbaa5bafd368a27bd6e11114b#egg=docs_validator
 iniconfig==2.3.0
 packaging==26.1
 pluggy==1.6.0
