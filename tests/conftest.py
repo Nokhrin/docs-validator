@@ -1,7 +1,10 @@
 """Глобальные фикстуры для тестов."""
+import re
+
 import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from validator.cli import create_parser
 
 
 @pytest.fixture
@@ -23,3 +26,14 @@ def sample_markdown_file(temp_docs_dir):
         "[Anchor](#section)\n"
     )
     return file_path
+
+
+@pytest.fixture
+def parser():
+    """Фикстура: парсер аргументов."""
+    return create_parser()
+
+@pytest.fixture
+def markdown_link_pattern():
+    """Скомпилированный паттерн Markdown ссылок."""
+    return re.compile(r'(!?)\[(.*?)\]\(([^)]+)\)')
