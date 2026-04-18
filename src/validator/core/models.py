@@ -47,7 +47,7 @@ class Link:
     link_type: LinkType
     source_file: Path
     line_number: int
-    anchor: Optional[str] = None
+    anchor: str | None = None
 
 @dataclass
 class FileToValidate:
@@ -72,7 +72,7 @@ class ValidationIssue:
     src_file: FileToValidate
     link: Optional[Link] = None
     message: str = ''
-    suggestion: Optional[str] = None
+    suggestion: str | None = None
 
 @dataclass
 class ValidationResult:
