@@ -25,8 +25,8 @@ class FilesExplorer:
             patterns_exclude: set[str] | None = None,
     ):
         self.root_path = root_path
-        self.extensions_include = extensions_include or DEFAULT_EXTENSIONS
-        self.patterns_exclude = patterns_exclude or DEFAULT_EXCLUDES
+        self.extensions_include = DEFAULT_EXTENSIONS if extensions_include is None else extensions_include
+        self.patterns_exclude = DEFAULT_EXCLUDES if patterns_exclude is None else patterns_exclude
 
     def _get_title(self, file_path: Path):
         """Возвращает заголовок документа.
