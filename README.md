@@ -19,6 +19,7 @@
 
 [Архитектура](docs/architecture.md)
 [Спецификация](docs/specification.md)
+[Разработка](docs/development.md)
 
 ---
 
