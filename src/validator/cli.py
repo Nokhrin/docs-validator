@@ -9,9 +9,7 @@ Examples:
 import logging
 from argparse import ArgumentParser
 from pathlib import Path
-
-log = logging.getLogger()
-
+from validator import setup_logging
 def create_parser() -> ArgumentParser:
     """Возвращает парсер."""
     parser: ArgumentParser = ArgumentParser(
@@ -58,6 +56,16 @@ def create_parser() -> ArgumentParser:
         choices=['debug', 'info', 'warning', 'error'],
         default='warning',
         help='Logging level (default: warning)',
+    )
+    scan_parser.add_argument(
+        '--validate',
+        action='store_true',
+        help='Run validators after scanning',
+    )
+    scan_parser.add_argument(
+        '--fail-on-error',
+        action='store_true',
+        help='Exit with code 1 if any ERROR issues found',
     )
 
     return parser
