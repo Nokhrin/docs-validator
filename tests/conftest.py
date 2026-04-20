@@ -5,6 +5,7 @@ import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from validator.cli import create_parser
+from validator.core.connectivity_graph import ConnectivityGraph
 
 
 @pytest.fixture
@@ -37,3 +38,7 @@ def parser():
 def markdown_link_pattern():
     """Скомпилированный паттерн Markdown ссылок."""
     return re.compile(r'(!?)\[(.*?)\]\(([^)]+)\)')
+
+@pytest.fixture
+def graph():
+    return ConnectivityGraph()
