@@ -42,12 +42,37 @@ class IssueType(Enum):
 
 @dataclass(frozen=True)
 class Link:
-    """Ссылка, извлеченная из документации."""
+    """Ссылка, извлеченная из документации.
+    Args:
+        line_number: номер строки в source_file, в которой найдена ссылка
+    """
     uri: str
     link_type: LinkType
     source_file: Path
     line_number: int
     anchor: str | None = None
+
+    @property
+    def is_internal(self) -> bool:
+        """Внутренняя ссылка.
+        Является относительным путем к файлу
+        """
+        return self.link_type is LinkType.INTERNAL
+
+    @property
+    def is_external(self) -> bool:
+        """Внешняя ссылка.
+        Является адресом веб, почты
+        """
+        return self.link_type is LinkType.EXTERNAL
+
+    @property
+    def target_file(self) -> Path | None:
+        """Относительный путь к целевому файлу."""
+        if self.is_internal:
+            if self.uri:
+                return Path(self.uri.split('#')[0])
+        return None
 
 @dataclass
 class FileToValidate:
