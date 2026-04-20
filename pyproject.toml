@@ -2,16 +2,33 @@
 name = "docs-validator"
 version = "0.0.1"
 requires-python = ">=3.13"
+readme = "README.md"
+keywords = ["documentation", "links", "validator", "markdown"]
 
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+dependencies = [
+    "networkx==3.6.1",
+]
+
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0",
-    "pytest-cov>=4.1",
+    "coverage==7.13.5",
+    "iniconfig==2.3.0",
+    "packaging==26.1",
+    "pluggy==1.6.0",
+    "Pygments==2.20.0",
+    "pytest==9.0.3",
+    "pytest-cov==7.1.0",
 ]
+
+[project.scripts]
+docs-validator = "validator.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -19,6 +36,9 @@ addopts = [
     "-vv",
     "--tb=short",
     "--strict-markers",
+    "--cov=src/validator",
+    "--cov-report=term",
+    "--cov-report=xml",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
