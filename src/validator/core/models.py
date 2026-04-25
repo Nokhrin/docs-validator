@@ -48,7 +48,7 @@ class Link:
     """
     uri: str
     link_type: LinkType
-    source_file: Path
+    parent_file: Path
     line_number: int
     anchor: str | None = None
 
@@ -114,8 +114,3 @@ class ValidationResult:
     def is_valid(self) -> bool:
         """Не проходит проверку, если результат содержит ERROR."""
         return not self.has_errors
-
-    @property
-    def total_links(self) -> int:
-        """Общее количество найденных ссылок."""
-        return sum(len(f.links_out) for f in self.files.values())

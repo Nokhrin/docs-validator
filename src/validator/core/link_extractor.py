@@ -41,7 +41,7 @@ class LinkExtractor:
             yield Link(
                 uri=uri,
                 link_type=link_type,
-                source_file=self.source_file,
+                parent_file=self.source_file,
                 line_number=line_number,
                 anchor=anchor,
             )
