@@ -23,7 +23,7 @@ class TestConnectivityGraph:
         link = Link(
             uri=f'./{target_file.name}',
             link_type=LinkType.INTERNAL,
-            source_file=source_file,
+            parent_file=source_file,
             line_number=1,
         )
         graph.add_link(link)
@@ -51,7 +51,7 @@ class TestConnectivityGraph:
         link = Link(
             uri=f'./{reachable_file.path.name}',
             link_type=LinkType.INTERNAL,
-            source_file=readme_file.path,
+            parent_file=readme_file.path,
             line_number=10,
         )
         graph.add_link(link)
