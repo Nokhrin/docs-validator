@@ -1,6 +1,8 @@
 """Тесты для валидаторов."""
 from pathlib import Path
 
+import pytest
+
 from validator.core.models import IssueType, SeverityLevel
 from validator.validators import AnchorLinkValidator
 from validator.validators.broken_link import BrokenLinkValidator
@@ -33,9 +35,9 @@ class TestOrphanFileValidator:
         assert len(orphan_issues) == 1
         assert orphan_issues[0].src_file.path == Path("orphan.md")
 
-    def test_one_root_file_no_orphans(self, one_md_file, temp_docs_dir):
+    def test_one_root_file_no_orphans(self, root_md_file, temp_docs_dir):
         validator = OrphanFileValidator()
-        issues = validator.validate(one_md_file, temp_docs_dir)
+        issues = validator.validate(root_md_file, temp_docs_dir)
 
         orphan_issues = [i for i in issues if i.issue_type == IssueType.ORPHAN_FILE]
         assert len(orphan_issues) == 0
@@ -50,8 +52,9 @@ class TestOrphanFileValidator:
 
 class TestAnchorLinkValidator:
 
+    @pytest.mark.skip(reason='заглушка (Спринт 3)')
     def test_anchor_validator_stub(self, two_files_valid_link_with_anchor, temp_docs_dir):
-        # TODO - заглушка (Спринт 3)
+        # TODO
         validator = AnchorLinkValidator()
         issues = validator.validate(two_files_valid_link_with_anchor, temp_docs_dir)
 

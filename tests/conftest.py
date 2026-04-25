@@ -35,16 +35,26 @@ def graph():
 
 
 @pytest.fixture
-def one_md_file(temp_docs_dir):
+def root_md_file(temp_docs_dir) -> dict[Path, FileToValidate]:
     """Создает один тестовый .md-файл с содержимым."""
-    file_path = temp_docs_dir / "test.md"
+    file_path = temp_docs_dir / "README.md"
     file_path.write_text(
-        "# Test Document\n\n"
+        "# README Test Document\n\n"
         "[Internal link](./other.md)\n"
         "[External link](https://example.com)\n"
         "[Anchor](#section)\n"
     )
-    return file_path
+    ftv = FileToValidate(
+        path=file_path,
+        title="README",
+        links_out={Link(
+            uri="./guide.md",
+            link_type=LinkType.INTERNAL,
+            parent_file=file_path,
+            line_number=1,
+        )}
+    )
+    return {file_path: ftv}
 
 
 @pytest.fixture
