@@ -6,10 +6,10 @@ Examples:
     docs-validator scan ./docs --report json --output report.json
     docs-validator --help
 """
-import logging
 from argparse import ArgumentParser
 from pathlib import Path
-from validator import setup_logging
+
+
 def create_parser() -> ArgumentParser:
     """Возвращает парсер."""
     parser: ArgumentParser = ArgumentParser(
