@@ -4,14 +4,13 @@ version = "0.0.1"
 requires-python = ">=3.13"
 readme = "README.md"
 keywords = ["documentation", "links", "validator", "markdown"]
+dependencies = [
+    "networkx==3.6.1",
+]
 
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
-
-dependencies = [
-    "networkx==3.6.1",
-]
 
 [project.optional-dependencies]
 dev = [

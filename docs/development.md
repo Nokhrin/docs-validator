@@ -1,4 +1,6 @@
-## Быстрый старт
+# Разработка
+
+## Создание окружения
 
 ```shell
 # Клонировать репозиторий
@@ -16,11 +18,30 @@ pip install -e ".[dev]"
 pytest
 ```
 
-## Настройка PyCharm
+---
 
-### Формат вывода pytest
+## Разработка
 
-Конфигурация/шаблон pytest
+### 0. Внесение изменений
+
+### 1. Проверка в окружении
+pytest tests/unit/ -v
+
+### 2. Проверка в Docker - локальная эмуляция CI
+cd .github/local
+docker compose up
+
+### 3. Коммит и пуш
+git add . && git commit -m "feat: ..." && git push
+
+### 4. Проверка в CI - GitHub Actions - автоматически
+
+---
+
+## Настройка pytest в PyCharm
+
+### Конфигурация/шаблон pytest
+
 ```text
 # Additional arguments:
 -vv --tb=short --color=yes --cov=src/validator --cov-report=term -p no:warnings
@@ -31,3 +52,4 @@ $ProjectFileDir$
 # Environment variables:
 PYTEST_ADDOPTS="-vv --tb=short --color=yes"
 ```
+
