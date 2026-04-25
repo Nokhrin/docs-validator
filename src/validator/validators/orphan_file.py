@@ -30,7 +30,8 @@ class OrphanFileValidator(BaseValidator):
         'index.md', 'index.html', 'index.rst',
     }
 
-    def validate(self, files_to_validate: dict[Path, FileToValidate], root_file: Path) -> list[ValidationIssue]:
+
+    def validate(self, files_to_validate: dict[Path, FileToValidate], root_dir: Path) -> list[ValidationIssue]:
         log.debug(f'Начало проверки на отсутствие входящих ссылок, количество файлов: {len(files_to_validate)}')
         issues = []
         target_files: set[Path] = set()
@@ -48,7 +49,7 @@ class OrphanFileValidator(BaseValidator):
                         severity_level=SeverityLevel.WARNING,
                         src_file=file,
                         link=None,
-                        message=f'Файл {file} не содержит входящих ссылок',
+                        message=f'Файл {file.path} не содержит входящих ссылок',
                         suggestion='Добавьте ссылку на файл',
                     ))
         return issues
