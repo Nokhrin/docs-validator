@@ -59,7 +59,7 @@ def link_to_dict(link: Link) -> dict:
     return {
         'uri': link.uri,
         'link_type': link.link_type.name,
-        'source_file': str(link.source_file),
+        'source_file': str(link.parent_file),
         'line_number': link.line_number,
         'anchor': link.anchor,
     }
