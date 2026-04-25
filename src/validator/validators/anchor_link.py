@@ -7,10 +7,10 @@ from validator.validators.base import BaseValidator
 log = logging.getLogger(__name__)
 
 
-class AnchorValidator(BaseValidator):
+class AnchorLinkValidator(BaseValidator):
     """Проверяет существование якоря."""
 
-    def validate(self, files_to_validate: dict[Path, FileToValidate], root_file: Path) -> list[ValidationIssue]:
+    def validate(self, files_to_validate: dict[Path, FileToValidate], root_dir: Path) -> list[ValidationIssue]:
         log.debug('проверка якоря - заглушка')
         # TODO - спринт 3
         pass
