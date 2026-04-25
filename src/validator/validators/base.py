@@ -10,7 +10,7 @@ class BaseValidator(ABC):
     def validate(
             self,
             files_to_validate: dict[Path, FileToValidate],
-            root_file: Path,
+            root_dir: Path,
     ) -> list[ValidationIssue]:
         """Возвращает список ошибок валидации."""
         pass
