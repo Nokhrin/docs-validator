@@ -14,7 +14,7 @@ class TestLink:
         link = Link(
             uri="./guide.md#installation",
             link_type=LinkType.INTERNAL,
-            source_file=Path("README.md"),
+            parent_file=Path("README.md"),
             line_number=3,
             anchor="installation"
         )
@@ -55,7 +55,6 @@ class TestValidationIssue:
 
 
 class TestValidationResult:
-    """Тестирование агрегированного результата."""
 
     def test_is_valid_when_no_errors(self):
         """is_valid возвращает True, если нет ошибок (только предупреждения)."""
