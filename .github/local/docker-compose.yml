@@ -1,0 +1,9 @@
+services:
+  # Локальная эмуляция GitHub Actions workflow
+  test:
+    build:
+      context: ../../
+      dockerfile: .github/local/Dockerfile
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
