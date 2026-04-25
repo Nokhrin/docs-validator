@@ -45,7 +45,7 @@ class ConnectivityGraph:
         """
         if link.is_internal:
             self._graph.add_edge(
-                link.source_file,
+                link.parent_file,
                 link.target_file,
                 link_type=link.link_type.name,
                 line_number=link.line_number,
