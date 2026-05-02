@@ -25,16 +25,17 @@ Options:
     --help              Show this help message and exit
 """
 import argparse
+import logging
 from argparse import ArgumentParser
 from pathlib import Path
-import logging
 
 from validator import setup_logging
 from validator.core.files_explorer import FilesExplorer
 from validator.core.link_extractor import LinkExtractor
 from validator.core.models import DocumentationFile, ValidationIssue, SeverityLevel
 from validator.serializers import files_to_json
-from validator.validators import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator
+from validator.validators import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
+    CircularDependencyValidator
 
 log = logging.getLogger(__name__)
 
@@ -139,8 +140,6 @@ def cmd_scan(args: argparse.Namespace) -> int:
         log.warning('Файлы документации не найдены')
         return 0
 
-    # todo - функция извлечения ссылок
-    # def extract_links():
     for file in files_explored:
         file_path = path_to_explore / file.path
         try:
@@ -150,8 +149,6 @@ def cmd_scan(args: argparse.Namespace) -> int:
         except IOError as err:
             log.error('При чтении файла %s произошла ошибка %s', file.path, err)
 
-    # todo - функция поиска ошибок
-    # def collect_issues():
     issues_explored: list[ValidationIssue] = []
     if args.validate:
         log.info('Выполнение валидации')
@@ -162,10 +159,10 @@ def cmd_scan(args: argparse.Namespace) -> int:
             BrokenLinkValidator(),
             OrphanFileValidator(),
             AnchorLinkValidator(),
+            CircularDependencyValidator(),
         ]
 
         for validator in validators:
-            # todo - путь известен в файле, второй параметр, возможно, избыточен
             issues = validator.validate(files_to_validate, path_to_explore)
             issues_explored.extend(issues)
             log.info('Валидатор %s обнаружил проблемы в количестве %d',
@@ -189,14 +186,12 @@ def cmd_scan(args: argparse.Namespace) -> int:
                 log.error('Проверка не пройдена - обнаружены проблемы уровня ERROR')
                 return 1
 
-    # todo - def generate_report()
     # генерация отчета
     if args.report == 'json':
         report = files_to_json(files_explored, include_content=False)
     elif args.report == 'markdown':
         report = _generate_markdown_report(files_explored, issues_explored)
 
-    # todo - def print_report()
     # генерация отчета
     report_file: Path = args.output
     if report_file:
@@ -205,7 +200,6 @@ def cmd_scan(args: argparse.Namespace) -> int:
     else:
         log.debug('Генерация отчета не была запрошена')
 
-    # todo - def get_statistics()
     # собрать статистику
     files_total: int = len(files_explored)
     links_total: int = sum(len(file.links_out) for file in files_explored)
