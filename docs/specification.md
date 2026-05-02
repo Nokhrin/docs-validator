@@ -23,22 +23,22 @@
 
 ## Спринт 3: Интеграция валидаторов; Отчётность
 
-| Шаг | Задача                          | Файл                                      | Критерий готовности                     |
-|-----|---------------------------------|-------------------------------------------|-----------------------------------------|
-| 3.1 | Исправление BrokenLinkValidator | `src/validator/validators/broken_link.py` | Пути разрешаются относительно root_file |
-| 3.2 | Исправление OrphanFileValidator | `src/validator/validators/orphan_file.py` | Корректные сообщения об ошибках         |
-| 3.3 | Интеграция валидаторов в CLI    | `src/validator/cli.py`                    | --validate запускает валидацию          |
-| 3.4 | MarkdownReporter                | `src/validator/reporters/markdown.py`     | Отчёт в Markdown с таблицами            |
-| 3.5 | HTMLReporter                    | `src/validator/reporters/html.py`         | HTML-отчёт с навигацией                 |
-| 3.6 | Тесты валидаторов               | `tests/unit/test_validators.py`           | 6 тестов, покрытие ≥80%                 |
-| 3.7 | Покрытие тестами                | CI workflow                               | --cov-fail-under=70 проходит            |
+| Шаг | Задача                          | Файл                                      | Критерий готовности                     | Статус |
+|-----|---------------------------------|-------------------------------------------|-----------------------------------------|--------|
+| 3.1 | Исправление BrokenLinkValidator | `src/validator/validators/broken_link.py` | Пути разрешаются относительно root_file | done   |
+| 3.2 | Исправление OrphanFileValidator | `src/validator/validators/orphan_file.py` | Корректные сообщения об ошибках         | done   |
+| 3.3 | Интеграция валидаторов в CLI    | `src/validator/cli.py`                    | --validate запускает валидацию          | done   |
+| 3.4 | MarkdownReporter                | `src/validator/reporters/markdown.py`     | Отчёт в Markdown с таблицами            | done   |
+| 3.5 | HTMLReporter                    | `src/validator/reporters/html.py`         | HTML-отчёт с навигацией                 | done   |
+| 3.6 | Тесты валидаторов               | `tests/unit/test_validators.py`           | 6 тестов, покрытие ≥80%                 | done   |
+| 3.7 | Покрытие тестами                | CI workflow                               | --cov-fail-under=70 проходит            | done   |
 
 ## Спринт 4: Завершение + Публикация
 
-| Шаг | Задача                      | Файл                                   | Критерий готовности          |
-|-----|-----------------------------|----------------------------------------|------------------------------|
-| 4.1 | AnchorValidator (полный)    | `src/validator/validators/anchor.py`   | Проверка якорей в файлах     |
-| 4.2 | CircularDependencyValidator | `src/validator/validators/circular.py` | Обнаружение циклов           |
-| 4.3 | Кэширование                 | `src/validator/utils/cache.py`         | Ускорение повторных запусков |
-| 4.4 | Конфигурация через файл     | `src/validator/config.py`              | .docs-validator.toml         |
-| 4.5 | Публикация на PyPI          | pyproject.toml                         | v0.1.0 доступен              |
+| Шаг | Задача                      | Файл                                   | Критерий готовности          | Статус |
+|-----|-----------------------------|----------------------------------------|------------------------------|--------|
+| 4.1 | AnchorValidator (полный)    | `src/validator/validators/anchor.py`   | Проверка якорей в файлах     |        |
+| 4.2 | CircularDependencyValidator | `src/validator/validators/circular.py` | Обнаружение циклов           |        |
+| 4.3 | Кэширование                 | `src/validator/utils/cache.py`         | Ускорение повторных запусков |        |
+| 4.4 | Конфигурация через файл     | `src/validator/config.py`              | .docs-validator.toml         |        |
+| 4.5 | Публикация на PyPI          | pyproject.toml                         | v0.1.0 доступен              |        |
