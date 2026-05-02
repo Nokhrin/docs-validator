@@ -1,13 +1,13 @@
 import json
 from pathlib import Path
 
-from validator.core.models import Link, LinkType, FileToValidate
+from validator.core.models import Link, LinkType, DocumentationFile
 from validator.serializers import link_to_dict, file_to_dict, files_to_json
 
 
 class TestSerializers:
     def test_file_with_links_to_dict_success(self):
-        ftv = FileToValidate(
+        ftv = DocumentationFile(
             path=Path('TEST-README.md'),
             title='TEST-README-TITLE',
             links_out={
@@ -34,8 +34,8 @@ class TestSerializers:
 
     def test_files_to_json_success(self):
         ftv_list = [
-            FileToValidate(path=Path('TEST-README.md'), title='readme'),
-            FileToValidate(path=Path('TEST-LICENSE.md'), title='license'),
+            DocumentationFile(path=Path('TEST-README.md'), title='readme'),
+            DocumentationFile(path=Path('TEST-LICENSE.md'), title='license'),
             ]
         ftv_list_serialized = files_to_json(ftv_list)
 

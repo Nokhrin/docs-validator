@@ -1,7 +1,7 @@
 """Тесты для моделей данных."""
 from pathlib import Path
 from validator.core.models import (
-    FileToValidate, Link, LinkType,
+    DocumentationFile, Link, LinkType,
     IssueType, SeverityLevel, ValidationIssue, ValidationResult
 )
 
@@ -27,7 +27,7 @@ class TestFileToValidate:
 
     def test_file_is_orphan_when_no_incoming(self):
         """Файл без входящих ссылок считается сиротой."""
-        file = FileToValidate(path=Path("orphan.md"), title="Orphan")
+        file = DocumentationFile(path=Path("orphan.md"), title="Orphan")
         assert file.is_orphan is True
 
 
@@ -36,7 +36,7 @@ class TestValidationIssue:
 
     def test_issue_with_link(self):
         """Проблема может быть связана с конкретной ссылкой."""
-        file = FileToValidate(path=Path("broken.md"), title="Broken")
+        file = DocumentationFile(path=Path("broken.md"), title="Broken")
         link = Link("missing.md", LinkType.INTERNAL, Path("broken.md"), 10)
 
         issue = ValidationIssue(
@@ -58,7 +58,7 @@ class TestValidationResult:
 
     def test_is_valid_when_no_errors(self):
         """is_valid возвращает True, если нет ошибок (только предупреждения)."""
-        file = FileToValidate(path=Path("test.md"), title="Test")
+        file = DocumentationFile(path=Path("test.md"), title="Test")
 
         warning_issue = ValidationIssue(
             issue_type=IssueType.ORPHAN_FILE,

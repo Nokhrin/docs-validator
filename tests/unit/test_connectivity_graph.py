@@ -2,13 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from validator.core.models import FileToValidate, Link, LinkType
+from validator.core.models import DocumentationFile, Link, LinkType
 
 
 class TestConnectivityGraph:
     def test_add_file(self, graph):
         """Добавление файла создает узел в графе."""
-        file = FileToValidate(path=Path('README.md'), title='Readme')
+        file = DocumentationFile(path=Path('README.md'), title='Readme')
         graph.add_file(file)
         assert graph.node_count == 1
 
@@ -16,8 +16,8 @@ class TestConnectivityGraph:
         """Добавление ссылки создает ребро в графе."""
         source_file: Path = Path('README.md')
         target_file: Path = Path('Guide.md')
-        file1 = FileToValidate(path=source_file, title='Readme')
-        file2 = FileToValidate(path=target_file, title='Guide')
+        file1 = DocumentationFile(path=source_file, title='Readme')
+        file2 = DocumentationFile(path=target_file, title='Guide')
         graph.add_file(file1)
         graph.add_file(file2)
         link = Link(
@@ -31,8 +31,8 @@ class TestConnectivityGraph:
 
     def test_get_orphans(self, graph):
         """Корректно определен файл без входящих ссылок."""
-        readme_not_orphan = FileToValidate(path=Path('README.md'), title='Readme')
-        guide_orphan = FileToValidate(path=Path('guide.md'), title='Guide')
+        readme_not_orphan = DocumentationFile(path=Path('README.md'), title='Readme')
+        guide_orphan = DocumentationFile(path=Path('guide.md'), title='Guide')
         graph.add_file(readme_not_orphan)
         graph.add_file(guide_orphan)
         orphans: list[Path] = list(graph.get_orphans())
@@ -42,9 +42,9 @@ class TestConnectivityGraph:
 
     def test_get_unreachable(self, graph):
         """Корректно определены узлы по признаку связи."""
-        readme_file = FileToValidate(path=Path('README.md'), title='Readme')
-        reachable_file = FileToValidate(path=Path('reachable.md'), title='reachable Guide')
-        unreachable_file = FileToValidate(path=Path('unreachable.md'), title='unreachable Guide')
+        readme_file = DocumentationFile(path=Path('README.md'), title='Readme')
+        reachable_file = DocumentationFile(path=Path('reachable.md'), title='reachable Guide')
+        unreachable_file = DocumentationFile(path=Path('unreachable.md'), title='unreachable Guide')
         graph.add_file(readme_file)
         graph.add_file(reachable_file)
         graph.add_file(unreachable_file)
@@ -64,8 +64,8 @@ class TestConnectivityGraph:
         """Корректно определено количество узлов."""
         source_file: Path = Path('README.md')
         target_file: Path = Path('Guide.md')
-        file1 = FileToValidate(path=source_file, title='Readme')
-        file2 = FileToValidate(path=target_file, title='Guide')
+        file1 = DocumentationFile(path=source_file, title='Readme')
+        file2 = DocumentationFile(path=target_file, title='Guide')
         graph.add_file(file1)
         graph.add_file(file2)
         assert graph.node_count == 2
@@ -74,8 +74,8 @@ class TestConnectivityGraph:
         """Корректно определено количество ребер."""
         source_file: Path = Path('README.md')
         target_file: Path = Path('Guide.md')
-        file1 = FileToValidate(path=source_file, title='Readme')
-        file2 = FileToValidate(path=target_file, title='Guide')
+        file1 = DocumentationFile(path=source_file, title='Readme')
+        file2 = DocumentationFile(path=target_file, title='Guide')
         graph.add_file(file1)
         graph.add_file(file2)
 

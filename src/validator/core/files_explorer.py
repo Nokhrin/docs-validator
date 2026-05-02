@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterator
 import logging
-from validator.core.models import FileToValidate
+from validator.core.models import DocumentationFile
 
 log = logging.getLogger(__name__)
 DEFAULT_EXTENSIONS = {'.md', '.markdown'}
@@ -43,12 +43,12 @@ class FilesExplorer:
             log.debug("Не удалось извлечь заголовок из %s: %s", file_path, err)
         return None
 
-    def _create_file_to_validate(self, file_path: Path) -> FileToValidate:
+    def _create_file_to_validate(self, file_path: Path) -> DocumentationFile:
         """Создает проверяемый файл."""
         relative_path: Path = file_path.relative_to(self.root_path)
         title = self._get_title(file_path) or str(relative_path)
 
-        return FileToValidate(
+        return DocumentationFile(
             path=relative_path,
             title=title,
             last_modified=datetime.fromtimestamp(file_path.stat().st_mtime)
@@ -72,7 +72,7 @@ class FilesExplorer:
                 if not self._is_excluded(file_name):
                     yield root / file_name
 
-    def explore(self) -> Iterator[FileToValidate]:
+    def explore(self) -> Iterator[DocumentationFile]:
         """Возвращает генератор файлов требующих проверки."""
         for file_path in self._walk_skip_ignored():
             if file_path.suffix.lower() in self.extensions_include:

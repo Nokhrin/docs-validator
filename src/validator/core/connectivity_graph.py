@@ -5,7 +5,7 @@ from typing import Iterator, cast
 
 import networkx as nx
 
-from validator.core.models import FileToValidate, Link
+from validator.core.models import DocumentationFile, Link
 
 DEFAULT_ROOT_FILES = {
     'README.md', 'README.rst', 'README.txt',
@@ -19,9 +19,9 @@ class ConnectivityGraph:
         Файл: физический файл -> экземпляр файла для валидации
         """
         self._graph = nx.DiGraph()
-        self._files: dict[Path, FileToValidate] = {}
+        self._files: dict[Path, DocumentationFile] = {}
 
-    def add_file(self, file_to_validate: FileToValidate) -> None:
+    def add_file(self, file_to_validate: DocumentationFile) -> None:
         """Добавляет файл как узел графа.
         Узел - физический файл, атрибут узла title: заголовок в файле
         G.add_node(Path('/tmp/filename'), title='header')

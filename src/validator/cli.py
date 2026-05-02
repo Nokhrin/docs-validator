@@ -1,10 +1,28 @@
 """
 CLI валидатора документации.
 
-Examples:
-    docs-validator scan ./docs --report markdown
-    docs-validator scan ./docs --report json --output report.json
+Usage:
+    docs-validator scan <path> [OPTIONS]
     docs-validator --help
+
+Examples:
+    docs-validator scan ./docs
+    docs-validator scan ./docs --report json --output report.json
+    docs-validator scan ./docs --validate --fail-on-error
+    docs-validator scan ./docs --exclude .git --exclude node_modules
+    docs-validator --help
+
+Commands:
+    scan        Scan documentation directory for broken links
+
+Options:
+    --report FORMAT     Report format: markdown, json (default: markdown)
+    --output PATH       Output file path (default: stdout)
+    --exclude PATTERN   Exclude pattern (can be specified multiple times)
+    --log-level LEVEL   Logging level: debug, info, warning, error (default: warning)
+    --validate          Run validators after scanning
+    --fail-on-error     Exit with code 1 if any ERROR issues found
+    --help              Show this help message and exit
 """
 import argparse
 from argparse import ArgumentParser
@@ -14,7 +32,7 @@ import logging
 from validator import setup_logging
 from validator.core.files_explorer import FilesExplorer
 from validator.core.link_extractor import LinkExtractor
-from validator.core.models import FileToValidate, ValidationIssue, SeverityLevel
+from validator.core.models import DocumentationFile, ValidationIssue, SeverityLevel
 from validator.serializers import files_to_json
 from validator.validators import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator
 
@@ -26,19 +44,32 @@ def create_parser() -> ArgumentParser:
     parser: ArgumentParser = ArgumentParser(
         prog='docs-validator',
         description='Static analyzer for documentation link integrity',
-        epilog='Example: docs-validator scan ./docs --report markdown',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+    Examples:
+      docs-validator scan ./docs --report markdown
+      docs-validator scan ./docs --validate --fail-on-error
+    """,
     )
 
     subparsers = parser.add_subparsers(
         dest='command',
         description='Available commands',
         required=True,
-        help='',
+        help='subcommands',
     )
 
     scan_parser = subparsers.add_parser(
         name='scan',
-        help='Scan documentation for links',
+        help='Scan documentation for broken links',
+        description='Scans documentation directory for broken links, orphan files, and missing anchors.',
+        epilog="""
+    Examples:
+      %(prog)s scan ./docs
+      %(prog)s scan ./docs --report json --output report.json
+      %(prog)s scan ./docs --validate --fail-on-error
+      %(prog)s scan ./docs --exclude .git --exclude node_modules
+      """,
     )
     scan_parser.add_argument(
         'path',
@@ -49,7 +80,7 @@ def create_parser() -> ArgumentParser:
         '--report',
         choices=['markdown', 'json'],
         default='markdown',
-        help='Report format (default: markdown)',
+        help='Report format: markdown, json (default: markdown)',
     )
     scan_parser.add_argument(
         '--output',
@@ -66,7 +97,7 @@ def create_parser() -> ArgumentParser:
         '--log-level',
         choices=['debug', 'info', 'warning', 'error'],
         default='warning',
-        help='Logging level (default: warning)',
+        help='Logging level: debug, info, warning, error (default: warning)',
     )
     scan_parser.add_argument(
         '--validate',
@@ -102,7 +133,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         root_path=path_to_explore,
         patterns_exclude=set(args.exclude)
     )
-    files_explored: list[FileToValidate] = list(explorer.explore())
+    files_explored: list[DocumentationFile] = list(explorer.explore())
 
     if not files_explored:
         log.warning('Файлы документации не найдены')
@@ -125,7 +156,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if args.validate:
         log.info('Выполнение валидации')
 
-        files_to_validate: dict[Path, FileToValidate] = {file.path: file for file in files_explored}
+        files_to_validate: dict[Path, DocumentationFile] = {file.path: file for file in files_explored}
 
         validators = [
             BrokenLinkValidator(),
@@ -182,11 +213,56 @@ def cmd_scan(args: argparse.Namespace) -> int:
 
     return 0
 
+
 def _generate_markdown_report(
-        files_explored: list[FileToValidate],
-        issues_explored: list[ValidationIssue],
+        files_explored: list[DocumentationFile],
+        issues_found: list[ValidationIssue],
 ) -> str:
-    pass
+    """Генерирует отчет в markdown."""
+    report_lines: list[str] = [
+        '# Documentation Validator Report',
+        '',
+        f'**Total files:** {len(files_explored)}',
+        f'**Total links:** {sum(len(f.links_out) for f in files_explored)}',
+    ]
+
+    # issues
+    if issues_found:
+        report_lines.extend([
+            f'**Issues found:** {len(issues_found)}',
+            '',
+            '## Issues',
+            '',
+        ])
+
+        for issue in issues_found:
+            report_lines.append(
+                f'- **[{issue.severity_level.value.upper()}]** '
+                f'{issue.issue_type.value}: {issue.message}'
+            )
+            if issue.link:
+                report_lines.append(f'  - File: {issue.src_file.path}:{issue.link.line_number}')
+        report_lines.append('')
+
+        report_lines.append('## Files')
+        report_lines.append('')
+
+    # files
+    for file in files_explored:
+        report_lines.extend([
+            f'### {file.path}',
+            f'- Title: {file.title}',
+            f'- Links found: {len(file.links_out)}',
+        ])
+
+        for link in sorted(file.links_out, key=lambda x: x.line_number):
+            report_lines.append(
+                f'| {link.link_type.name} | {link.uri} | '
+                f'{link.anchor or "-"} | {link.line_number} |'
+            )
+
+    report_lines.append('')
+    return '\n'.join(report_lines)
 
 
 def main() -> int:
@@ -198,3 +274,8 @@ def main() -> int:
         return cmd_scan(args)
 
     return 0
+
+
+if __name__ == '__main__':
+    import sys
+    sys.exit(main())

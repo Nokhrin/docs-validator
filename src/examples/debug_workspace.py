@@ -16,7 +16,7 @@ from validator.cli import create_parser
 from validator.core.connectivity_graph import ConnectivityGraph
 from validator.core.files_explorer import FilesExplorer
 from validator.core.link_extractor import LinkExtractor
-from validator.core.models import FileToValidate, Link, LinkType
+from validator.core.models import DocumentationFile, Link, LinkType
 from validator.validators import OrphanFileValidator, BrokenLinkValidator, AnchorLinkValidator
 
 log = logging.getLogger('validator.debug')
@@ -106,21 +106,21 @@ def make_graph():
 
 
 
-def create_test_data_orphan(temp_dir: Path) -> dict[Path, FileToValidate]:
+def create_test_data_orphan(temp_dir: Path) -> dict[Path, DocumentationFile]:
     """Создаёт тестовые данные для OrphanFileValidator."""
     (temp_dir / "README.md").write_text("# Root")
     (temp_dir / "orphan.md").write_text("# Orphan")
     return {
-        Path("README.md"): FileToValidate(path=Path("README.md"), title="Root"),
-        Path("orphan.md"): FileToValidate(path=Path("orphan.md"), title="Orphan"),
+        Path("README.md"): DocumentationFile(path=Path("README.md"), title="Root"),
+        Path("orphan.md"): DocumentationFile(path=Path("orphan.md"), title="Orphan"),
     }
 
 
-def create_test_data_broken(temp_dir: Path) -> dict[Path, FileToValidate]:
+def create_test_data_broken(temp_dir: Path) -> dict[Path, DocumentationFile]:
     """Создаёт тестовые данные для BrokenLinkValidator."""
     (temp_dir / "README.md").write_text("[BROKEN](./missing.md)")
     return {
-        Path("README.md"): FileToValidate(
+        Path("README.md"): DocumentationFile(
             path=Path("README.md"),
             title="README",
             links_out={Link(
@@ -133,12 +133,12 @@ def create_test_data_broken(temp_dir: Path) -> dict[Path, FileToValidate]:
     }
 
 
-def create_test_data_anchor(temp_dir: Path) -> dict[Path, FileToValidate]:
+def create_test_data_anchor(temp_dir: Path) -> dict[Path, DocumentationFile]:
     """Создаёт тестовые данные для AnchorLinkValidator."""
     (temp_dir / "README.md").write_text("[Link](./guide.md#anchor)")
     (temp_dir / "guide.md").write_text("# Guide\n### anchor\n")
     return {
-        Path("README.md"): FileToValidate(
+        Path("README.md"): DocumentationFile(
             path=Path("README.md"),
             title="README",
             links_out={Link(
@@ -149,7 +149,7 @@ def create_test_data_anchor(temp_dir: Path) -> dict[Path, FileToValidate]:
                 anchor="anchor",
             )}
         ),
-        Path("guide.md"): FileToValidate(path=Path("guide.md"), title="Guide"),
+        Path("guide.md"): DocumentationFile(path=Path("guide.md"), title="Guide"),
     }
 
 

@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from validator.core.models import FileToValidate, Link, LinkType
+from validator.core.models import DocumentationFile, Link, LinkType
 
 
 class DataclassEncoder(json.JSONEncoder):
@@ -25,7 +25,7 @@ class DataclassEncoder(json.JSONEncoder):
                 return super().default(obj)
 
 
-def file_to_dict(file: FileToValidate, include_content: bool = False) -> dict:
+def file_to_dict(file: DocumentationFile, include_content: bool = False) -> dict:
     """Преобразует FileToValidate в dict для JSON-сериализации.
 
     Args:
@@ -66,7 +66,7 @@ def link_to_dict(link: Link) -> dict:
 
 
 def files_to_json(
-    files: list[FileToValidate],
+    files: list[DocumentationFile],
     include_content: bool = False,
     indent: int = 2,
 ) -> str:

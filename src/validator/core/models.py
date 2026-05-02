@@ -96,7 +96,7 @@ class Link:
         return None
 
 @dataclass
-class FileToValidate:
+class DocumentationFile:
     """Файл, в котором проверяются ссылки.
     Args:
         path: Относительный путь к файлу
@@ -134,7 +134,7 @@ class ValidationIssue:
     """
     issue_type: IssueType
     severity_level: SeverityLevel
-    src_file: FileToValidate
+    src_file: DocumentationFile
     link: Optional[Link] = None
     message: str = ''
     suggestion: str | None = None
@@ -146,7 +146,7 @@ class ValidationResult:
         files_processed: Словарь обработанных файлов
         issues: Список найденных проблем
     """
-    files_processed: dict[Path, FileToValidate]
+    files_processed: dict[Path, DocumentationFile]
     issues: list[ValidationIssue]
 
     @property

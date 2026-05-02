@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from validator.cli import create_parser
 from validator.core.connectivity_graph import ConnectivityGraph
-from validator.core.models import FileToValidate, Link, LinkType
+from validator.core.models import DocumentationFile, Link, LinkType
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def graph():
 
 
 @pytest.fixture
-def root_md_file(temp_docs_dir) -> dict[Path, FileToValidate]:
+def root_md_file(temp_docs_dir) -> dict[Path, DocumentationFile]:
     """Создает один тестовый .md-файл с содержимым."""
     file_path = temp_docs_dir / "README.md"
     file_path.write_text(
@@ -44,7 +44,7 @@ def root_md_file(temp_docs_dir) -> dict[Path, FileToValidate]:
         "[External link](https://example.com)\n"
         "[Anchor](#section)\n"
     )
-    ftv = FileToValidate(
+    ftv = DocumentationFile(
         path=file_path,
         title="README",
         links_out={Link(
@@ -58,11 +58,11 @@ def root_md_file(temp_docs_dir) -> dict[Path, FileToValidate]:
 
 
 @pytest.fixture
-def two_files_valid_link_with_anchor(temp_docs_dir) -> dict[Path, FileToValidate]:
+def two_files_valid_link_with_anchor(temp_docs_dir) -> dict[Path, DocumentationFile]:
     (temp_docs_dir / "README.md").write_text("[VALID-LINK-WITH-ANCHOR](./guide.md#anchor-link)")
     (temp_docs_dir / "guide.md").write_text("# Guide\nline1\nline2\n### anchor-link\nline3")
     return {
-        Path("README.md"): FileToValidate(
+        Path("README.md"): DocumentationFile(
             path=Path("README.md"),
             title="README",
             links_out={Link(
@@ -72,16 +72,16 @@ def two_files_valid_link_with_anchor(temp_docs_dir) -> dict[Path, FileToValidate
                 line_number=1,
             )}
         ),
-        Path("guide.md"): FileToValidate(path=Path("guide.md"), title="Guide"),
+        Path("guide.md"): DocumentationFile(path=Path("guide.md"), title="Guide"),
     }
 
 
 @pytest.fixture
-def two_files_valid_link_no_anchor(temp_docs_dir) -> dict[Path, FileToValidate]:
+def two_files_valid_link_no_anchor(temp_docs_dir) -> dict[Path, DocumentationFile]:
     (temp_docs_dir / "README.md").write_text("[VALID-LINK-NO-ANCHOR](./guide.md)")
     (temp_docs_dir / "guide.md").write_text("# Guide")
     return {
-        Path("README.md"): FileToValidate(
+        Path("README.md"): DocumentationFile(
             path=Path("README.md"),
             title="README",
             links_out={Link(
@@ -91,25 +91,25 @@ def two_files_valid_link_no_anchor(temp_docs_dir) -> dict[Path, FileToValidate]:
                 line_number=1,
             )}
         ),
-        Path("guide.md"): FileToValidate(path=Path("guide.md"), title="Guide"),
+        Path("guide.md"): DocumentationFile(path=Path("guide.md"), title="Guide"),
     }
 
 
 @pytest.fixture
-def two_files_one_orphan(temp_docs_dir) -> dict[Path, FileToValidate]:
+def two_files_one_orphan(temp_docs_dir) -> dict[Path, DocumentationFile]:
     (temp_docs_dir / "README.md").write_text("# Root")
     (temp_docs_dir / "orphan.md").write_text("# Orphan")
     return {
-        Path("README.md"): FileToValidate(path=Path("README.md"), title="Root"),
-        Path("orphan.md"): FileToValidate(path=Path("orphan.md"), title="Orphan"),
+        Path("README.md"): DocumentationFile(path=Path("README.md"), title="Root"),
+        Path("orphan.md"): DocumentationFile(path=Path("orphan.md"), title="Orphan"),
     }
 
 
 @pytest.fixture
-def one_file_broken_link(temp_docs_dir) -> dict[Path, FileToValidate]:
+def one_file_broken_link(temp_docs_dir) -> dict[Path, DocumentationFile]:
     (temp_docs_dir / "README.md").write_text("[BROKEN-LINK](./missing.md)")
     return {
-        Path("README.md"): FileToValidate(
+        Path("README.md"): DocumentationFile(
             path=Path("README.md"),
             title="README",
             links_out={Link(

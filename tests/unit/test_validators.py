@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from validator.core.models import IssueType, SeverityLevel
+from validator.core.models import IssueType, SeverityLevel, DocumentationFile, Link, LinkType
 from validator.validators import AnchorLinkValidator
 from validator.validators.broken_link import BrokenLinkValidator
 from validator.validators.orphan_file import OrphanFileValidator
@@ -24,6 +24,27 @@ class TestBrokenLinkValidator:
         issues = validator.validate(two_files_valid_link_no_anchor, temp_docs_dir)
 
         assert len(issues) == 0
+
+    def test_multiple_broken_links(self, temp_docs_dir):
+        """Несколько битых ссылок в одном файле."""
+        (temp_docs_dir / "README.md").write_text(
+            "[Link1](./missing1.md)\n[Link2](./missing2.md)"
+        )
+        files = {
+            Path("README.md"): DocumentationFile(
+                path=Path("README.md"),
+                title="README",
+                links_out={
+                    Link("./missing1.md", LinkType.INTERNAL, Path("README.md"), 1),
+                    Link("./missing2.md", LinkType.INTERNAL, Path("README.md"), 2),
+                }
+            )
+        }
+        validator = BrokenLinkValidator()
+        issues = validator.validate(files, temp_docs_dir)
+
+        assert len(issues) == 2
+        assert all(i.issue_type == IssueType.BROKEN_LINK for i in issues)
 
 
 class TestOrphanFileValidator:
@@ -48,6 +69,22 @@ class TestOrphanFileValidator:
 
         orphan_issues = [i for i in issues if i.issue_type == IssueType.ORPHAN_FILE]
         assert len(orphan_issues) == 0
+
+    def test_multiple_orphans(self, temp_docs_dir):
+        """Несколько файлов-сирот."""
+        (temp_docs_dir / "README.md").write_text("# Root")
+        (temp_docs_dir / "orphan1.md").write_text("# Orphan 1")
+        (temp_docs_dir / "orphan2.md").write_text("# Orphan 2")
+        files = {
+            Path("README.md"): DocumentationFile(path=Path("README.md"), title="Root"),
+            Path("orphan1.md"): DocumentationFile(path=Path("orphan1.md"), title="Orphan 1"),
+            Path("orphan2.md"): DocumentationFile(path=Path("orphan2.md"), title="Orphan 2"),
+        }
+        validator = OrphanFileValidator()
+        issues = validator.validate(files, temp_docs_dir)
+        orphan_issues = [i for i in issues if i.issue_type == IssueType.ORPHAN_FILE]
+
+        assert len(orphan_issues) == 2
 
 
 class TestAnchorLinkValidator:

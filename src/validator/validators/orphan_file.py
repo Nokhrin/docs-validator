@@ -1,8 +1,8 @@
 import logging
 from pathlib import Path
 
-from validator.core.models import FileToValidate, ValidationIssue, IssueType, SeverityLevel
-from validator.validators.base import BaseValidator
+from validator.core.models import DocumentationFile, ValidationIssue, IssueType, SeverityLevel
+from validator.validators.base_validator import BaseValidator
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class OrphanFileValidator(BaseValidator):
     }
 
 
-    def validate(self, files_to_validate: dict[Path, FileToValidate], root_dir: Path) -> list[ValidationIssue]:
+    def validate(self, files_to_validate: dict[Path, DocumentationFile], root_dir: Path) -> list[ValidationIssue]:
         log.debug(f'Начало проверки на отсутствие входящих ссылок, количество файлов: {len(files_to_validate)}')
         issues = []
         target_files: set[Path] = set()
