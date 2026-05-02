@@ -38,6 +38,6 @@
 | Шаг | Задача                            | Файл                                   | Критерий готовности                                 | Статус |
 |-----|-----------------------------------|----------------------------------------|-----------------------------------------------------|--------|
 | 4.1 | AnchorValidator                   | `src/validator/validators/anchor.py`   | Проверка якорей в файлах                            | done   |
-| 4.2 | CircularDependencyValidator       | `src/validator/validators/circular.py` | Обнаружение циклов                                  |        |
+| 4.2 | CircularDependencyValidator       | `src/validator/validators/circular.py` | Обнаружение циклов                                  | done   |
 | 4.3 | Применении конфигурации из файла  | `src/validator/config.py`              | `.docs-validator.toml`                              |        |
 | 4.4 | Тестирование на реальных проектах | `tests/integration/`                   | Успешная валидация `notes_and_thoughts`, `playbook` |        |
