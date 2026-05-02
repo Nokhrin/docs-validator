@@ -1,4 +1,5 @@
 """Граф связности документов."""
+import logging
 from functools import cached_property
 from pathlib import Path
 from typing import Iterator, cast
@@ -7,13 +8,16 @@ import networkx as nx
 
 from validator.core.models import DocumentationFile, Link
 
+log = logging.getLogger(__name__)
 DEFAULT_ROOT_FILES = {
     'README.md', 'README.rst', 'README.txt',
     'index.md', 'index.html', 'index.rst',
 }
 
+
 class ConnectivityGraph:
     """Направленный граф: файл -> ссылка -> файл"""
+
     def __init__(self):
         """
         Файл: физический файл -> экземпляр файла для валидации
@@ -78,6 +82,17 @@ class ConnectivityGraph:
         for node in self._graph.nodes():
             if node not in reachable:
                 yield cast(Path, node)
+
+    def get_simple_cycles(self) -> list[Path]:
+        """Возвращает простые циклы графа.
+        Генератор
+        """
+        cycles = []
+        try:
+            cycles = nx.simple_cycles(self._graph)
+        except ValueError as err:
+            log.warning('Ошибка при поиске циклов в графе')
+        return list(cycles)
 
     @property
     def node_count(self) -> int:
