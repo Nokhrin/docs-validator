@@ -2,7 +2,6 @@ import json
 import logging
 from datetime import datetime, timezone
 from logging import Formatter, LogRecord
-from pathlib import Path
 
 _logger = logging.getLogger(__name__)
 _logger.addHandler(logging.NullHandler())

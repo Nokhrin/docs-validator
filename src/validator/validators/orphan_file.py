@@ -19,10 +19,6 @@ class OrphanFileValidator(BaseValidator):
     Это соответствует конвенциям документации:
     - MkDocs, Sphinx, Docusaurus используют index.md как entry point раздела
     - GitHub показывает README.md как описание директории
-
-    Ограничения:
-    - Файл orphan-section/index.md не будет помечен как сирота
-    #TODO - строгая валидация: --strict режим (Спринт 3+)
     """
 
     DEFAULT_ROOT_FILES = {
