@@ -164,5 +164,42 @@ def one_file_broken_anchor(temp_docs_dir) -> dict[Path, DocumentationFile]:
                 anchor='missing',
             )}
         ),
-        # Path("guide.md"): DocumentationFile(path=Path("guide.md"), title="Guide"),
     }
+
+
+@pytest.fixture
+def three_files_no_cycles(temp_docs_dir) -> dict[Path, DocumentationFile]:
+    (temp_docs_dir / 'a.md').write_text('[Link](./b.md)')
+    (temp_docs_dir / 'b.md').write_text('[Link](./c.md)')
+    (temp_docs_dir / 'c.md').write_text('# End')
+    return {
+            Path('a.md'): DocumentationFile(
+                path=Path('a.md'), title='A', links_out={
+                    Link('./b.md', LinkType.INTERNAL, Path('a.md'), 1)
+                }
+            ),
+            Path('b.md'): DocumentationFile(
+                path=Path('b.md'), title='B', links_out={
+                    Link('./c.md', LinkType.INTERNAL, Path('b.md'), 1)
+                }
+            ),
+            Path('c.md'): DocumentationFile(path=Path('c.md'), title='C'),
+        }
+
+@pytest.fixture
+def two_files_circular_dep(temp_docs_dir):
+    """Создаёт тестовые данные с циклическими зависимостями."""
+    (temp_docs_dir / 'a.md').write_text('[Link](./b.md)')
+    (temp_docs_dir / 'b.md').write_text('[Link](./a.md)')
+    return  {
+            Path('a.md'): DocumentationFile(
+                path=Path('a.md'), title='A', links_out={
+                    Link('./b.md', LinkType.INTERNAL, Path('a.md'), 1)
+                }
+            ),
+            Path('b.md'): DocumentationFile(
+                path=Path('b.md'), title='B', links_out={
+                    Link('./a.md', LinkType.INTERNAL, Path('b.md'), 1)
+                }
+            ),
+        }
