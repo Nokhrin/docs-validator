@@ -17,7 +17,8 @@ from validator.core.connectivity_graph import ConnectivityGraph
 from validator.core.files_explorer import FilesExplorer
 from validator.core.link_extractor import LinkExtractor
 from validator.core.models import DocumentationFile, Link, LinkType
-from validator.validators import OrphanFileValidator, BrokenLinkValidator, AnchorLinkValidator
+from validator.validators import OrphanFileValidator, BrokenLinkValidator, AnchorLinkValidator, \
+    CircularDependencyValidator
 
 log = logging.getLogger('validator.debug')
 
@@ -153,6 +154,24 @@ def create_test_data_anchor(temp_dir: Path) -> dict[Path, DocumentationFile]:
     }
 
 
+def create_test_data_circ_deps(temp_dir):
+    """Создаёт тестовые данные с циклическими зависимостями."""
+    (temp_dir / 'a.md').write_text('[Link](./b.md)')
+    (temp_dir / 'b.md').write_text('[Link](./a.md)')
+    return  {
+            Path('a.md'): DocumentationFile(
+                path=Path('a.md'), title='A', links_out={
+                    Link('./b.md', LinkType.INTERNAL, Path('a.md'), 1)
+                }
+            ),
+            Path('b.md'): DocumentationFile(
+                path=Path('b.md'), title='B', links_out={
+                    Link('./a.md', LinkType.INTERNAL, Path('b.md'), 1)
+                }
+            ),
+        }
+
+
 def check_validators():
     """Запускает валидаторы на тестовых данных."""
     with TemporaryDirectory() as temp_dir:
@@ -186,14 +205,21 @@ def check_validators():
         log.debug('Найдено проблем: %d', len(anchor_issues))
         for issue in anchor_issues:
             log.warning('  - %s: %s', issue.issue_type.name, issue.message)
-        # TODO
-        # 19:02:15 [DEBUG] validator.validators.anchor_link: проверка якоря - заглушка
+        # 18:09:38 [WARNING] validator.debug:   - MISSING_ANCHOR: Якорь "#anchor" не найден в файле guide.md
         
+        # CircularDependencyValidator
+        log.debug('=== CircularDependencyValidator ===')
+        cdv = CircularDependencyValidator()
+        deps_data = create_test_data_circ_deps(temp_path)
+        deps_issues = cdv.validate(files_to_validate=deps_data, root_dir=temp_path)
+        log.debug('Найдено проблем: %d', len(deps_issues))
+        for issue in deps_issues:
+            log.warning('  - %s: %s', issue.issue_type.name, issue.message)
+        # 18:25:29 [DEBUG] validator.validators.circular_deps: Найдено циклов: 1, проблем: 2
+
     return 0
 
 
 if __name__ == '__main__':
     setup_logging()
-    # parse()
-    # make_graph()
     check_validators()
