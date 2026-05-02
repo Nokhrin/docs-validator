@@ -33,12 +33,11 @@
 | 3.6 | Тесты валидаторов               | `tests/unit/test_validators.py`           | 6 тестов, покрытие ≥80%                 | done   |
 | 3.7 | Покрытие тестами                | CI workflow                               | --cov-fail-under=70 проходит            | done   |
 
-## Спринт 4: Завершение + Публикация
+## Спринт 4: Разработка + Интеграционное тестирование
 
-| Шаг | Задача                      | Файл                                   | Критерий готовности          | Статус |
-|-----|-----------------------------|----------------------------------------|------------------------------|--------|
-| 4.1 | AnchorValidator (полный)    | `src/validator/validators/anchor.py`   | Проверка якорей в файлах     |        |
-| 4.2 | CircularDependencyValidator | `src/validator/validators/circular.py` | Обнаружение циклов           |        |
-| 4.3 | Кэширование                 | `src/validator/utils/cache.py`         | Ускорение повторных запусков |        |
-| 4.4 | Конфигурация через файл     | `src/validator/config.py`              | .docs-validator.toml         |        |
-| 4.5 | Публикация на PyPI          | pyproject.toml                         | v0.1.0 доступен              |        |
+| Шаг | Задача                            | Файл                                   | Критерий готовности                                 | Статус |
+|-----|-----------------------------------|----------------------------------------|-----------------------------------------------------|--------|
+| 4.1 | AnchorValidator                   | `src/validator/validators/anchor.py`   | Проверка якорей в файлах                            | done   |
+| 4.2 | CircularDependencyValidator       | `src/validator/validators/circular.py` | Обнаружение циклов                                  |        |
+| 4.3 | Применении конфигурации из файла  | `src/validator/config.py`              | `.docs-validator.toml`                              |        |
+| 4.4 | Тестирование на реальных проектах | `tests/integration/`                   | Успешная валидация `notes_and_thoughts`, `playbook` |        |
