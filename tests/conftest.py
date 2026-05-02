@@ -96,7 +96,7 @@ def two_files_valid_link_no_anchor(temp_docs_dir) -> dict[Path, DocumentationFil
 
 
 @pytest.fixture
-def two_files_one_orphan(temp_docs_dir) -> dict[Path, DocumentationFile]:
+def one_root_one_orphan(temp_docs_dir) -> dict[Path, DocumentationFile]:
     (temp_docs_dir / "README.md").write_text("# Root")
     (temp_docs_dir / "orphan.md").write_text("# Orphan")
     return {
@@ -104,9 +104,20 @@ def two_files_one_orphan(temp_docs_dir) -> dict[Path, DocumentationFile]:
         Path("orphan.md"): DocumentationFile(path=Path("orphan.md"), title="Orphan"),
     }
 
+@pytest.fixture
+def one_root_two_orphans(temp_docs_dir) -> dict[Path, DocumentationFile]:
+    (temp_docs_dir / 'README.md').write_text('# Root')
+    (temp_docs_dir / 'orphan1.md').write_text('# Orphan 1')
+    (temp_docs_dir / 'orphan2.md').write_text('# Orphan 2')
+    return {
+        Path('README.md'): DocumentationFile(path=Path('README.md'), title='Root'),
+        Path('orphan1.md'): DocumentationFile(path=Path('orphan1.md'), title='Orphan 1'),
+        Path('orphan2.md'): DocumentationFile(path=Path('orphan2.md'), title='Orphan 2'),
+    }
+
 
 @pytest.fixture
-def one_file_broken_link(temp_docs_dir) -> dict[Path, DocumentationFile]:
+def one_file_one_broken_link(temp_docs_dir) -> dict[Path, DocumentationFile]:
     (temp_docs_dir / "README.md").write_text("[BROKEN-LINK](./missing.md)")
     return {
         Path("README.md"): DocumentationFile(
@@ -119,4 +130,39 @@ def one_file_broken_link(temp_docs_dir) -> dict[Path, DocumentationFile]:
                 line_number=1,
             )}
         )
+    }
+
+@pytest.fixture
+def one_file_multiple_broken_links(temp_docs_dir) -> dict[Path, DocumentationFile]:
+    (temp_docs_dir / "README.md").write_text(
+        "[Link1](./missing1.md)\n[Link2](./missing2.md)"
+    )
+    return {
+        Path("README.md"): DocumentationFile(
+            path=Path("README.md"),
+            title="README",
+            links_out={
+                Link("./missing1.md", LinkType.INTERNAL, Path("README.md"), 1),
+                Link("./missing2.md", LinkType.INTERNAL, Path("README.md"), 2),
+            }
+        )
+    }
+
+@pytest.fixture
+def one_file_broken_anchor(temp_docs_dir) -> dict[Path, DocumentationFile]:
+    (temp_docs_dir / 'README.md').write_text('[BROKEN-LINK](./missing.md)')
+    (temp_docs_dir / 'guide.md').write_text('# Guide')
+    return {
+        Path('README.md'): DocumentationFile(
+            path=Path('README.md'),
+            title='README',
+            links_out={Link(
+                uri='./guide.md#missing',
+                link_type=LinkType.INTERNAL,
+                parent_file=Path('README.md'),
+                line_number=1,
+                anchor='missing',
+            )}
+        ),
+        # Path("guide.md"): DocumentationFile(path=Path("guide.md"), title="Guide"),
     }
