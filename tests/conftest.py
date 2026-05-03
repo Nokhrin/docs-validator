@@ -5,6 +5,7 @@ import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from validator.cli import create_parser
+from validator.config import ValidatorConfig, DEFAULT_CONFIG_FILENAME
 from validator.core.connectivity_graph import ConnectivityGraph
 from validator.core.models import DocumentationFile, Link, LinkType
 
@@ -203,3 +204,18 @@ def two_files_circular_dep(temp_docs_dir):
                 }
             ),
         }
+
+@pytest.fixture
+def config_toml(temp_docs_dir):
+    config_file = temp_docs_dir / DEFAULT_CONFIG_FILENAME
+    config_file.write_text("""
+    [validator]
+    path_to_explore = "./docs"
+    exclude_patterns = [".git", "node_modules"]
+    log_level = "debug"
+    report_format = "json"
+    output_file = "./report.json"
+    validate = true
+    fail_on_error = true
+    """)
+    return config_file
