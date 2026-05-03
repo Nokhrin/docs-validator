@@ -83,16 +83,16 @@ class ConnectivityGraph:
             if node not in reachable:
                 yield cast(Path, node)
 
-    def get_simple_cycles(self) -> list[Path]:
+    def get_simple_cycles(self) -> list[list[Path]]:
         """Возвращает простые циклы графа.
         Генератор
         """
         cycles = []
         try:
-            cycles = nx.simple_cycles(self._graph)
+            cycles = list(nx.simple_cycles(self._graph))
         except ValueError as err:
-            log.warning('Ошибка при поиске циклов в графе')
-        return list(cycles)
+            log.warning('Ошибка при поиске циклов в графе: %s', err)
+        return cycles
 
     @property
     def node_count(self) -> int:
