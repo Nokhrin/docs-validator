@@ -17,8 +17,8 @@ class ValidatorConfig:
     log_level: str = 'warning'
     report_format: str = 'markdown'
     output_file: Optional[Path] = None
-    validate: bool = False
-    fail_on_error: bool = False
+    is_validate: bool = False
+    is_fail_on_error: bool = False
 
 def load_config_from_toml(config_file: Path) -> ValidatorConfig:
     if not config_file.exists():
@@ -38,8 +38,8 @@ def load_config_from_toml(config_file: Path) -> ValidatorConfig:
         exclude_patterns=validator_parameters.get('exclude_patterns', []),
         log_level=validator_parameters.get('log_level', 'warning'),
         report_format=validator_parameters.get('report_format', 'markdown'),
-        validate=validator_parameters.get('validate', False),
-        fail_on_error=validator_parameters.get('fail_on_error', False),
+        is_validate=validator_parameters.get('is_validate', False),
+        is_fail_on_error=validator_parameters.get('is_fail_on_error', False),
     )
 
     log.debug('Конфигурация загружена: %s', config)
