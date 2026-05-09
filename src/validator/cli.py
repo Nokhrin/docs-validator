@@ -8,7 +8,7 @@ Usage:
 Examples:
     docs-validator scan ./docs
     docs-validator scan ./docs --report json --output report.json
-    docs-validator scan ./docs --validate --fail-on-error
+    docs-validator scan ./docs --is_validate --fail-on-error
     docs-validator scan ./docs --exclude_patterns .git --exclude_patterns node_modules
     docs-validator --help
 
@@ -20,7 +20,7 @@ Options:
     --output PATH       Output file path (default: stdout)
     --exclude_patterns PATTERN   exclude_patterns pattern (can be specified multiple times)
     --log-level LEVEL   Logging level: debug, info, warning, error (default: warning)
-    --validate          Run validators after scanning
+    --is_validate          Run validators after scanning
     --fail-on-error     Exit with code 1 if any ERROR issues found
     --help              Show this help message and exit
 """
@@ -30,7 +30,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from validator import setup_logging
-from validator.config import load_config_from_toml
+from validator.config import load_config_from_toml, ValidatorConfig
 from validator.core.files_explorer import FilesExplorer
 from validator.core.link_extractor import LinkExtractor
 from validator.core.models import DocumentationFile, ValidationIssue, SeverityLevel
@@ -50,7 +50,7 @@ def create_parser() -> ArgumentParser:
         epilog="""
     Examples:
       docs-validator scan ./docs --report markdown
-      docs-validator scan ./docs --validate --fail-on-error
+      docs-validator scan ./docs --is_validate --fail-on-error
     """,
     )
 
@@ -70,30 +70,34 @@ def create_parser() -> ArgumentParser:
       %(prog)s scan ./docs
       %(prog)s scan ./docs --report json --output report.json
       %(prog)s scan ./docs --validate --fail-on-error
-      %(prog)s scan ./docs --exclude_patterns .git --exclude_patterns node_modules
+      %(prog)s scan ./docs --exclude .git --exclude_patterns node_modules
       """,
     )
     scan_parser.add_argument(
-        'path',
+        # 'path',
         type=Path,
+        dest='path_to_explore',
         help='Path to documentation directory',
     )
     scan_parser.add_argument(
         '--report',
         choices=['markdown', 'json'],
         default='markdown',
+        dest='report_format',
         help='Report format: markdown, json (default: markdown)',
     )
     scan_parser.add_argument(
         '--output',
         type=Path,
+        dest='output_file',
         help='Output file path (default: stdout)',
     )
     scan_parser.add_argument(
         '--exclude',
         action='append',
         default=[],
-        help='exclude_patterns pattern (can be specified multiple times)',
+        dest='exclude_patterns',
+        help='pattern to exlude (can be specified multiple times)',
     )
     scan_parser.add_argument(
         '--log-level',
@@ -104,11 +108,13 @@ def create_parser() -> ArgumentParser:
     scan_parser.add_argument(
         '--validate',
         action='store_true',
+        dest='is_validate',
         help='Run validators after scanning',
     )
     scan_parser.add_argument(
         '--fail-on-error',
         action='store_true',
+        dest='is_fail_on_error',
         help='Exit with code 1 if any ERROR issues found',
     )
     scan_parser.add_argument(
@@ -122,20 +128,39 @@ def create_parser() -> ArgumentParser:
 
 def cmd_scan(args: argparse.Namespace) -> int:
     """Выполняет сканирование."""
-    config_toml = Path(args.config) if hasattr(args, 'config') and args.config else None
-    if config_toml is not None:
-        log.debug('Применение конфигурации из файла: %s', config_toml)
-        config_toml = load_config_from_toml(config_toml)
+    config_file = None
 
-    path_to_explore = args.path_to_explore or config_toml.path_to_explore or Path.cwd()
-    output_file = args.output or config_toml.output_file
-    exclude_patterns = args.exclude or config_toml.exclude_patterns
-    log_level = args.log_level or config_toml.log_level
-    report_format = args.report or config_toml.report_format
-    validate = args.validate or config_toml.is_validate
-    fail_on_error = args.fail_on_error or config_toml.is_fail_on_error
+    if hasattr(args, 'config') and args.config:
+        config_file = Path(args.config)
+        if not config_file.exists():
+            log.error('Файл конфигурации не найден: %s', config_file)
+            return 1
+        log.debug('Используется явный файл конфигурации: %s', config_file)
 
-    setup_logging(log_level)
+    else:
+        config_file = Path.cwd() / '.docs-validator.toml'
+        if config_file.exists():
+            log.debug('Найден файл конфигурации по умолчанию: %s', config_file)
+        else:
+            log.debug('Файл конфигурации не найден, используются значения по умолчанию')
+
+    config_effective = ValidatorConfig()
+    if config_file:
+        try:
+            config_effective = load_config_from_toml(config_file)
+        except IOError as err:
+            log.error('Ошибка при чтении конфигурации %s: %s', config_file, err)
+            return 1
+
+    path_to_explore = args.path_to_explore or config_effective.path_to_explore or Path.cwd()
+    output_file = args.output_file or config_effective.output_file
+    exclude_patterns = args.exclude_patterns or config_effective.exclude_patterns
+    log_level = args.log_level or config_effective.log_level
+    report_format = args.report_format or config_effective.report_format
+    is_validate = args.is_validate or config_effective.is_validate
+    is_fail_on_error = args.is_fail_on_error or config_effective.is_fail_on_error
+
+    setup_logging(log_level.upper())
 
     if not path_to_explore.exists():
         log.error('Не удалось найти запрошенный путь: %s', args.path)
@@ -167,7 +192,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
             log.error('При чтении файла %s произошла ошибка %s', file.path, err)
 
     issues_explored: list[ValidationIssue] = []
-    if validate:
+    if is_validate:
         log.info('Выполнение валидации')
 
         files_to_validate: dict[Path, DocumentationFile] = {file.path: file for file in files_explored}
@@ -180,7 +205,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         ]
 
         for validator in validators:
-            issues = validator.validate(files_to_validate, path_to_explore)
+            issues = validator.is_validate(files_to_validate, path_to_explore)
             issues_explored.extend(issues)
             log.info('Валидатор %s обнаружил проблемы в количестве %d',
                      validator.__class__.__name__, len(issues))
@@ -197,7 +222,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
                     issue.link.line_number if issue.link else 0,
                 )
         # exit codes ошибок
-        if fail_on_error:
+        if is_fail_on_error:
             has_errors = any(issue.severity_level == SeverityLevel.ERROR for issue in issues_explored)
             if has_errors:
                 log.error('Проверка не пройдена - обнаружены проблемы уровня ERROR')
