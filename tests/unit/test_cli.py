@@ -38,12 +38,12 @@ class TestCliArgsToConfigMapping:
         ])
 
         config = {
-            'report_format': args.report,
-            'output_path': args.output,
+            'report_format': args.report_format,
+            'output_file': args.output_file,
         }
 
         assert config['report_format'] == 'json'
-        assert config['output_path'] == Path('report.json')
+        assert config['output_file'] == Path('report.json')
 
     def test_multiple_exclude_patterns_collected_in_set(self, parser):
         """Параметр --exclude с множественным указанием собирается в set."""
@@ -54,7 +54,7 @@ class TestCliArgsToConfigMapping:
             '--exclude', '.git'
         ])
 
-        exclude_set = set(args.exclude)
+        exclude_set = set(args.exclude_patterns)
 
         assert '*.tmp' in exclude_set
         assert 'draft_*' in exclude_set
@@ -81,22 +81,22 @@ class TestCliAllFlags:
 
         assert args.command == 'scan'
         assert args.path == Path('./docs')
-        assert args.report == 'markdown'
-        assert args.output is None
-        assert args.exclude == []
+        assert args.report_format == 'markdown'
+        assert args.output_file is None
+        assert args.exclude_patterns == []
         assert args.log_level == 'warning'
-        assert args.validate is False
-        assert args.fail_on_error is False
+        assert args.is_validate is False
+        assert args.is_fail_on_error is False
 
     def test_report_markdown(self, parser):
         """Флаг --report markdown."""
         args = parser.parse_args(['scan', './docs', '--report', 'markdown'])
-        assert args.report == 'markdown'
+        assert args.report_format == 'markdown'
 
     def test_report_json(self, parser):
         """Флаг --report json."""
         args = parser.parse_args(['scan', './docs', '--report', 'json'])
-        assert args.report == 'json'
+        assert args.report_format == 'json'
 
     def test_report_invalid(self, parser):
         """Невалидный --report вызывает ошибку."""
@@ -106,12 +106,12 @@ class TestCliAllFlags:
     def test_output_file(self, parser):
         """Флаг --output."""
         args = parser.parse_args(['scan', './docs', '--output', 'report.json'])
-        assert args.output == Path('report.json')
+        assert args.output_file == Path('report.json')
 
     def test_exclude_single(self, parser):
         """Флаг --exclude (однократный)."""
         args = parser.parse_args(['scan', './docs', '--exclude', '.git'])
-        assert args.exclude == ['.git']
+        assert args.exclude_patterns == ['.git']
 
     def test_exclude_multiple(self, parser):
         """Флаг --exclude (множественный)."""
@@ -121,7 +121,7 @@ class TestCliAllFlags:
             '--exclude', 'node_modules',
             '--exclude', '*.tmp',
         ])
-        assert args.exclude == ['.git', 'node_modules', '*.tmp']
+        assert args.exclude_patterns == ['.git', 'node_modules', '*.tmp']
 
     def test_log_level_debug(self, parser):
         """Флаг --log-level debug."""
@@ -151,22 +151,22 @@ class TestCliAllFlags:
     def test_validate_flag(self, parser):
         """Флаг --validate."""
         args = parser.parse_args(['scan', './docs', '--validate'])
-        assert args.validate is True
+        assert args.is_validate is True
 
     def test_validate_flag_absent(self, parser):
         """Флаг --validate отсутствует."""
         args = parser.parse_args(['scan', './docs'])
-        assert args.validate is False
+        assert args.is_validate is False
 
     def test_fail_on_error_flag(self, parser):
         """Флаг --fail-on-error."""
         args = parser.parse_args(['scan', './docs', '--fail-on-error'])
-        assert args.fail_on_error is True
+        assert args.is_fail_on_error is True
 
     def test_fail_on_error_flag_absent(self, parser):
         """Флаг --fail-on-error отсутствует."""
         args = parser.parse_args(['scan', './docs'])
-        assert args.fail_on_error is False
+        assert args.is_fail_on_error is False
 
     def test_all_flags_combined(self, parser):
         """Все флаги вместе."""
@@ -183,12 +183,12 @@ class TestCliAllFlags:
 
         assert args.command == 'scan'
         assert args.path == Path('./docs')
-        assert args.report == 'json'
-        assert args.output == Path('report.json')
-        assert args.exclude == ['.git', 'node_modules']
+        assert args.report_format == 'json'
+        assert args.output_file == Path('report.json')
+        assert args.exclude_patterns == ['.git', 'node_modules']
         assert args.log_level == 'debug'
-        assert args.validate is True
-        assert args.fail_on_error is True
+        assert args.is_validate is True
+        assert args.is_fail_on_error is True
 
     def test_help_flag(self, parser, capsys):
         """Флаг --help выводит справку."""
