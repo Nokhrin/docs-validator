@@ -28,13 +28,14 @@ import argparse
 import logging
 from argparse import ArgumentParser
 from pathlib import Path
+from typing import Callable
 
 from validator import setup_logging
 from validator.config import load_config_from_toml, ValidatorConfig
 from validator.core.files_explorer import FilesExplorer
 from validator.core.link_extractor import LinkExtractor
 from validator.core.models import DocumentationFile, ValidationIssue, SeverityLevel
-from validator.serializers import files_to_json
+from validator.reporters import HTMLReporter, MarkdownReporter, JSONReporter
 from validator.validators import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
     CircularDependencyValidator
 
@@ -81,10 +82,10 @@ def create_parser() -> ArgumentParser:
     )
     scan_parser.add_argument(
         '--report',
-        choices=['markdown', 'json'],
+        choices=['markdown', 'json', 'html'],
         default='markdown',
         dest='report_format',
-        help='Report format: markdown, json (default: markdown)',
+        help='Report format: markdown, json, html (default: markdown)',
     )
     scan_parser.add_argument(
         '--output',
@@ -128,8 +129,6 @@ def create_parser() -> ArgumentParser:
 
 def cmd_scan(args: argparse.Namespace) -> int:
     """Выполняет сканирование."""
-    config_file = None
-
     if hasattr(args, 'config') and args.config:
         config_file = Path(args.config)
         if not config_file.exists():
@@ -153,7 +152,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
             return 1
 
     path_to_explore = args.path_to_explore or config_effective.path_to_explore or Path.cwd()
-    output_file = args.output_file or config_effective.output_file
+    output_file: Path = args.output_file or config_effective.output_file
     exclude_patterns = args.exclude_patterns or config_effective.exclude_patterns
     log_level = args.log_level or config_effective.log_level
     report_format = args.report_format or config_effective.report_format
@@ -163,11 +162,11 @@ def cmd_scan(args: argparse.Namespace) -> int:
     setup_logging(log_level.upper())
 
     if not path_to_explore.exists():
-        log.error('Не удалось найти запрошенный путь: %s', args.path)
+        log.error('Не удалось найти запрошенный путь: %s', path_to_explore)
         return 1
 
     if not path_to_explore.is_dir():
-        log.error('Запрошенный путь не является каталогом: %s', args.path)
+        log.error('Запрошенный путь не является каталогом: %s', path_to_explore)
         return 1
 
     log.info('Выполняется обход каталога %s', path_to_explore)
@@ -205,7 +204,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         ]
 
         for validator in validators:
-            issues = validator.is_validate(files_to_validate, path_to_explore)
+            issues = validator.validate(files_to_validate, path_to_explore)
             issues_explored.extend(issues)
             log.info('Валидатор %s обнаружил проблемы в количестве %d',
                      validator.__class__.__name__, len(issues))
@@ -229,16 +228,24 @@ def cmd_scan(args: argparse.Namespace) -> int:
                 return 1
 
     # генерация отчета
-    if report_format == 'json':
-        report = files_to_json(files_explored, include_content=False)
-    elif report_format == 'markdown':
-        report = _generate_markdown_report(files_explored, issues_explored)
+    files_to_report = {f.path: f for f in files_explored}
+    reporters: dict[str, Callable[[dict, list], str]] ={
+        'json': lambda _files, _issues: JSONReporter.report(_files, _issues),
+        'markdown': lambda _files, _issues: MarkdownReporter().report(_files, _issues),
+        'html': lambda _files, _issues: HTMLReporter().report(_files, _issues),
+    }
+    make_report = reporters.get(report_format, reporters['markdown'])
 
-    # генерация отчета
-    report_file: Path = output_file
-    if report_file:
-        report_file.write_text(report, encoding='utf-8')
-        log.info('Отчет записан в файл: %s', report_file)
+    try:
+        report = make_report(files_to_report, issues_explored)
+    except Exception as err:
+        log.error('Ошибка при генерации отчета: %s', err)
+        return 1
+
+    # файл отчета
+    if output_file:
+        output_file.write_text(report, encoding='utf-8')
+        log.info('Отчет записан в файл: %s', output_file)
     else:
         log.debug('Генерация отчета не была запрошена')
 
@@ -248,57 +255,6 @@ def cmd_scan(args: argparse.Namespace) -> int:
     log.info('Обработано файлов: %d\nОбнаружено ссылок: %d\n', files_total, links_total)
 
     return 0
-
-
-def _generate_markdown_report(
-        files_explored: list[DocumentationFile],
-        issues_found: list[ValidationIssue],
-) -> str:
-    """Генерирует отчет в markdown."""
-    report_lines: list[str] = [
-        '# Documentation Validator Report',
-        '',
-        f'**Total files:** {len(files_explored)}',
-        f'**Total links:** {sum(len(f.links_out) for f in files_explored)}',
-    ]
-
-    # issues
-    if issues_found:
-        report_lines.extend([
-            f'**Issues found:** {len(issues_found)}',
-            '',
-            '## Issues',
-            '',
-        ])
-
-        for issue in issues_found:
-            report_lines.append(
-                f'- **[{issue.severity_level.value.upper()}]** '
-                f'{issue.issue_type.value}: {issue.message}'
-            )
-            if issue.link:
-                report_lines.append(f'  - File: {issue.src_file.path}:{issue.link.line_number}')
-        report_lines.append('')
-
-        report_lines.append('## Files')
-        report_lines.append('')
-
-    # files
-    for file in files_explored:
-        report_lines.extend([
-            f'### {file.path}',
-            f'- Title: {file.title}',
-            f'- Links found: {len(file.links_out)}',
-        ])
-
-        for link in sorted(file.links_out, key=lambda x: x.line_number):
-            report_lines.append(
-                f'| {link.link_type.name} | {link.uri} | '
-                f'{link.anchor or "-"} | {link.line_number} |'
-            )
-
-    report_lines.append('')
-    return '\n'.join(report_lines)
 
 
 def main() -> int:
@@ -314,4 +270,5 @@ def main() -> int:
 
 if __name__ == '__main__':
     import sys
+
     sys.exit(main())

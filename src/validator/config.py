@@ -1,8 +1,8 @@
 """Управление конфигурацией валидатора."""
 import logging
-import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+from tomllib import load, TOMLDecodeError
 from typing import Optional
 
 log = logging.getLogger(__name__)
@@ -26,14 +26,29 @@ def load_config_from_toml(config_file: Path) -> ValidatorConfig:
                     'Создана конфигурация по умолчанию', config_file)
         return ValidatorConfig()
 
-    log.debug('Загрузка конфигурации из %s', config_file)
-    with open(config_file, 'rb') as f:
-        config_content= tomllib.load(f)
+    try:
+        log.debug('Загрузка конфигурации из %s', config_file)
+        with open(config_file, 'rb') as f:
+            config_content= load(f)
+    except TOMLDecodeError as err:
+        log.error('Ошибка синтаксиса TOML в файле %s: %s', config_file, err)
+        raise
+    except IOError as err:
+        log.error('Не удалось прочитать файл конфигурации %s: %s', config_file, err)
+        raise
 
     validator_parameters = config_content.get('validator', {})
 
+    path_to_explore: Optional[Path] = validator_parameters.get('path_to_explore', None)
+    if path_to_explore is not None:
+        path_to_explore = Path(validator_parameters['path_to_explore'])
+        if not path_to_explore.is_absolute():
+            path_to_explore = Path.cwd() / path_to_explore
+        path_to_explore=path_to_explore.resolve()
+        log.debug('Путь к файлу конфигурации: %s', path_to_explore)
+
     config =ValidatorConfig(
-        path_to_explore=Path(validator_parameters['path_to_explore']) if 'path_to_explore' in validator_parameters else None,
+        path_to_explore=path_to_explore if 'path_to_explore' in validator_parameters else None,
         output_file=Path(validator_parameters['output_file']) if 'output_file' in validator_parameters else None,
         exclude_patterns=validator_parameters.get('exclude_patterns', []),
         log_level=validator_parameters.get('log_level', 'warning'),

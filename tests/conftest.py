@@ -208,14 +208,14 @@ def two_files_circular_dep(temp_docs_dir):
 @pytest.fixture
 def config_toml(temp_docs_dir):
     config_file = temp_docs_dir / DEFAULT_CONFIG_FILENAME
-    config_file.write_text("""
+    config_file.write_text(f"""
     [validator]
-    path_to_explore = "./docs"
+    path_to_explore = "{temp_docs_dir.resolve()}/docs"
     exclude_patterns = [".git", "node_modules"]
     log_level = "debug"
     report_format = "json"
     output_file = "./report.json"
-    validate = true
-    fail_on_error = true
+    is_validate = true
+    is_fail_on_error = true
     """)
     return config_file

@@ -1,9 +1,9 @@
 [validator]
 # Путь к директории документации (относительный или абсолютный)
-path = "./docs"
+path_to_explore = "./docs"
 
 # Паттерны файлов/директорий для исключения
-exclude = [
+exclude_patterns = [
     ".git",
     "node_modules",
     "*.tmp",
@@ -20,7 +20,7 @@ report_format = "markdown"
 # output = "./report.md"
 
 # Запускать ли валидаторы после сканирования
-validate = true
+is_validate = true
 
 # Выход с кодом 1 при обнаружении ERROR
-fail_on_error = true
+is_fail_on_error = true

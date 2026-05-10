@@ -1,33 +1,41 @@
 """Тесты отображения аргументов CLI в конфигурацию парсера."""
 from argparse import Namespace
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
-from validator.core.files_explorer import FilesExplorer
+from validator.core.files_explorer import FilesExplorer, DEFAULT_EXCLUDES
 
 
 class TestCliArgsToConfigMapping:
     """Проверка передачи параметров CLI в объекты ядра."""
 
-    def test_default_values_propagate_to_files_explorer(self, parser):
-        """Значения по умолчанию корректно передаются в FilesExplorer."""
-        args: Namespace = parser.parse_args(['scan', './docs'])
+    def test_default_excludes_applied_when_empty_list(self):
+        """Проверка применения DEFAULT_EXCLUDES при пустом списке исключений."""
+        root = Path('/tmp/test')
 
-        with patch('validator.core.files_explorer.FilesExplorer') as mock_explorer:
-            mock_instance = MagicMock()
-            mock_explorer.return_value = mock_instance
+        explorer = FilesExplorer(
+            root_path=root,
+            patterns_exclude=set()
+        )
 
-            explorer = FilesExplorer(
-                root_path=args.path,
-                extensions_include={'.md', '.markdown'},
-                patterns_exclude=set(),
-            )
+        assert explorer.patterns_exclude == DEFAULT_EXCLUDES
+        assert '.git' in explorer.patterns_exclude
+        assert '.venv' in explorer.patterns_exclude
 
-            assert explorer.root_path == Path('./docs')
-            assert explorer.extensions_include == {'.md', '.markdown'}
-            assert explorer.patterns_exclude == set()
+    def test_custom_excludes_merged_with_defaults(self):
+        """Проверка объединения пользовательских исключений с дефолтными."""
+        root = Path('/tmp/test')
+        custom_excludes = {'my_custom_folder', '*.log'}
+
+        explorer = FilesExplorer(
+            root_path=root,
+            patterns_exclude=custom_excludes
+        )
+
+        assert '.git' in explorer.patterns_exclude
+        assert 'my_custom_folder' in explorer.patterns_exclude
+        assert len(explorer.patterns_exclude) > len(DEFAULT_EXCLUDES)
 
     def test_custom_report_and_output_mapped_to_config(self, parser):
         """Пользовательские --report и --output отражаются в конфигурации."""
@@ -80,7 +88,7 @@ class TestCliAllFlags:
         args = parser.parse_args(['scan', './docs'])
 
         assert args.command == 'scan'
-        assert args.path == Path('./docs')
+        assert args.path_to_explore == Path('./docs')
         assert args.report_format == 'markdown'
         assert args.output_file is None
         assert args.exclude_patterns == []
@@ -182,7 +190,7 @@ class TestCliAllFlags:
         ])
 
         assert args.command == 'scan'
-        assert args.path == Path('./docs')
+        assert args.path_to_explore == Path('./docs')
         assert args.report_format == 'json'
         assert args.output_file == Path('report.json')
         assert args.exclude_patterns == ['.git', 'node_modules']
