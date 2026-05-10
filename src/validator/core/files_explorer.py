@@ -1,8 +1,9 @@
 """Поиск файлов документации."""
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Iterator
-import logging
+
 from validator.core.models import DocumentationFile
 
 log = logging.getLogger(__name__)
@@ -26,9 +27,12 @@ class FilesExplorer:
     ):
         self.root_path = root_path
         self.extensions_include = DEFAULT_EXTENSIONS if extensions_include is None else extensions_include
-        self.patterns_exclude = DEFAULT_EXCLUDES if patterns_exclude is None else patterns_exclude
 
-    def _get_title(self, file_path: Path):
+        custom_exclude: set[str] = patterns_exclude or set()
+        self.patterns_exclude = DEFAULT_EXCLUDES.union(custom_exclude)
+
+    @staticmethod
+    def _get_title(file_path: Path):
         """Возвращает заголовок документа.
         Условия "заголовка":
             - расположение в строке с индексом 0

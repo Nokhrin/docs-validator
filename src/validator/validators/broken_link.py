@@ -13,6 +13,11 @@ class BrokenLinkValidator(BaseValidator):
         issues = []
         for file in files_to_validate.values():
             for link in file.links_out:
+
+                # TODO - Проверка доступности внешних ссылок
+                if link.is_external or link.target_file is None:
+                    continue
+
                 target_path = root_dir / link.target_file
                 if target_path is not None and not target_path.exists():
                     log.debug(f'Не найден адресуемый файл: {link.target_file} по ссылке {link}',)

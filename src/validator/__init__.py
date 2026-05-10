@@ -32,7 +32,7 @@ def setup_logging(
 ) -> None:
     """Глобальная настройка логирования."""
     root_logger = logging.getLogger('validator')
-    root_logger.setLevel(level)
+    root_logger.setLevel(level.upper())
 
     root_logger.handlers.clear()
 
