@@ -28,10 +28,10 @@ import argparse
 import logging
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 from validator import setup_logging
-from validator.config import load_config_from_toml, ValidatorConfig
+from validator.config import load_config_from_toml, ValidatorConfig, DEFAULT_CONFIG_FILENAME
 from validator.core.files_explorer import FilesExplorer
 from validator.core.link_extractor import LinkExtractor
 from validator.core.models import DocumentationFile, ValidationIssue, SeverityLevel
@@ -75,10 +75,9 @@ def create_parser() -> ArgumentParser:
       """,
     )
     scan_parser.add_argument(
-        # 'path',
+        'path_to_explore',
         type=Path,
-        dest='path_to_explore',
-        help='Path to documentation directory',
+        help='Path to documentation directory (positional, required)',
     )
     scan_parser.add_argument(
         '--report',
@@ -98,7 +97,7 @@ def create_parser() -> ArgumentParser:
         action='append',
         default=[],
         dest='exclude_patterns',
-        help='pattern to exlude (can be specified multiple times)',
+        help='pattern to exlcude (can be specified multiple times)',
     )
     scan_parser.add_argument(
         '--log-level',
@@ -128,20 +127,14 @@ def create_parser() -> ArgumentParser:
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
-    """Выполняет сканирование."""
-    if hasattr(args, 'config') and args.config:
+    """Выполняет сканирование по запрошенным параметрам."""
+    config_file = Path.cwd() / DEFAULT_CONFIG_FILENAME
+    if args.config:
         config_file = Path(args.config)
         if not config_file.exists():
-            log.error('Файл конфигурации не найден: %s', config_file)
+            log.error('Запрошенный файл конфигурации не найден: %s', config_file)
             return 1
-        log.debug('Используется явный файл конфигурации: %s', config_file)
-
-    else:
-        config_file = Path.cwd() / '.docs-validator.toml'
-        if config_file.exists():
-            log.debug('Найден файл конфигурации по умолчанию: %s', config_file)
-        else:
-            log.debug('Файл конфигурации не найден, используются значения по умолчанию')
+    log.debug('Используется файл конфигурации: %s', config_file)
 
     config_effective = ValidatorConfig()
     if config_file:
@@ -151,8 +144,9 @@ def cmd_scan(args: argparse.Namespace) -> int:
             log.error('Ошибка при чтении конфигурации %s: %s', config_file, err)
             return 1
 
-    path_to_explore = args.path_to_explore or config_effective.path_to_explore or Path.cwd()
-    output_file: Path = args.output_file or config_effective.output_file
+    path_to_explore = args.path_to_explore
+
+    output_file: Optional[Path] = args.output_file or config_effective.output_file
     exclude_patterns = args.exclude_patterns or config_effective.exclude_patterns
     log_level = args.log_level or config_effective.log_level
     report_format = args.report_format or config_effective.report_format
@@ -209,27 +203,78 @@ def cmd_scan(args: argparse.Namespace) -> int:
             log.info('Валидатор %s обнаружил проблемы в количестве %d',
                      validator.__class__.__name__, len(issues))
 
-        # проблемы
+        # issues-statistics
         if issues_explored:
             log.warning('Всего обнаружено проблем: %d', len(issues_explored))
+
             for issue in issues_explored:
+                line_info = ''
+                # Исключаем вывод номера строки для файлов-сирот (ORPHAN_FILE)
+                if issue.issue_type.value != 'orphan_file' and issue.link:
+                    line_info = f' (строка {issue.link.line_number})'
+
                 log.warning(
-                    '[%s] %s: %s (строка %d)',
+                    '[%s] %s: %s%s',
                     issue.severity_level.value,
                     issue.issue_type.value,
                     issue.message,
-                    issue.link.line_number if issue.link else 0,
+                    line_info
                 )
-        # exit codes ошибок
+
+            # Итоговая сводка по типам ошибок
+            log.warning('')
+            log.warning('=' * 40)
+            log.warning('ОБНАРУЖЕННЫЕ ПРОБЛЕМЫ')
+            log.warning('=' * 40)
+
+            stats = {}
+            for issue in issues_explored:
+                t = issue.issue_type.value
+                s = issue.severity_level.value.upper()
+                if t not in stats:
+                    stats[t] = {'ERROR': 0, 'WARNING': 0, 'INFO': 0}
+                stats[t][s] += 1
+
+            total_count = 0
+            error_count = 0
+
+            for issue_type in sorted(stats.keys()):
+                counts = stats[issue_type]
+                type_total = sum(counts.values())
+                type_errors = counts.get('ERROR', 0)
+
+                total_count += type_total
+                error_count += type_errors
+
+                parts = []
+                if counts['ERROR'] > 0:
+                    parts.append(f'{counts['ERROR']} ERR')
+                if counts['WARNING'] > 0:
+                    parts.append(f'{counts['WARNING']} WARN')
+                if counts['INFO'] > 0:
+                    parts.append(f'{counts['INFO']} INFO')
+
+                details = ', '.join(parts) if parts else f'{type_total} шт.'
+                log.warning('%-20s : %s', issue_type.upper(), details)
+
+            log.warning('-' * 40)
+            if error_count > 0:
+                log.error('ИТОГО: %d проблем (из них %d уровня ERROR)', total_count, error_count)
+            else:
+                log.warning('ИТОГО: %d проблем (нет критических ошибок)', total_count)
+            log.warning('=' * 40)
+            log.warning('')
+
         if is_fail_on_error:
             has_errors = any(issue.severity_level == SeverityLevel.ERROR for issue in issues_explored)
             if has_errors:
-                log.error('Проверка не пройдена - обнаружены проблемы уровня ERROR')
                 return 1
+
+        return 0
 
     # генерация отчета
     files_to_report = {f.path: f for f in files_explored}
-    reporters: dict[str, Callable[[dict, list], str]] ={
+    reporters: dict[str, Callable[[dict, list], str]] = {
         'json': lambda _files, _issues: JSONReporter.report(_files, _issues),
         'markdown': lambda _files, _issues: MarkdownReporter().report(_files, _issues),
         'html': lambda _files, _issues: HTMLReporter().report(_files, _issues),
@@ -249,10 +294,29 @@ def cmd_scan(args: argparse.Namespace) -> int:
     else:
         log.debug('Генерация отчета не была запрошена')
 
-    # собрать статистику
-    files_total: int = len(files_explored)
-    links_total: int = sum(len(file.links_out) for file in files_explored)
-    log.info('Обработано файлов: %d\nОбнаружено ссылок: %d\n', files_total, links_total)
+    # Сбор итоговой статистики
+    files_total = len(files_explored)
+    links_total = sum(len(f.links_out) for f in files_explored)
+
+    # Формирование сообщения сводки
+    summary_lines = [
+        "=" * 40,
+        "СТАТИСТИКА ВЫПОЛНЕНИЯ",
+        "=" * 40,
+        f"Обработано файлов: {files_total}",
+        f"Обнаружено ссылок: {links_total}",
+    ]
+
+    if issues_explored:
+        error_count = sum(1 for i in issues_explored if i.severity_level.value == 'error')
+        summary_lines.append(f"Найдено проблем: {len(issues_explored)} (из них ошибок: {error_count})")
+    else:
+        summary_lines.append("Проблем не обнаружено.")
+
+    summary_lines.append("=" * 40)
+
+    # Прямой вывод в stderr (гарантированно виден пользователю)
+    print("\n".join(summary_lines), file=sys.stderr)
 
     return 0
 
