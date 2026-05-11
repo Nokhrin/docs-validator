@@ -1,26 +1,6 @@
 [validator]
-# Путь к директории документации (относительный или абсолютный)
-path_to_explore = "./docs"
-
-# Паттерны файлов/директорий для исключения
-exclude_patterns = [
-    ".git",
-    "node_modules",
-    "*.tmp",
-    "draft_*"
-]
-
-# Уровень логирования: debug, info, warning, error
+exclude_patterns = [".git", "node_modules", "*.tmp"]
 log_level = "warning"
-
-# Формат отчёта: markdown, json
 report_format = "markdown"
-
-# Путь к файлу отчёта (если не указан - вывод в stdout)
-# output = "./report.md"
-
-# Запускать ли валидаторы после сканирования
 is_validate = true
-
-# Выход с кодом 1 при обнаружении ERROR
 is_fail_on_error = true
