@@ -12,7 +12,6 @@ DEFAULT_CONFIG_FILENAME = '.docs-validator.toml'
 
 @dataclass
 class ValidatorConfig:
-    path_to_explore: Optional[Path] = None
     exclude_patterns: list[str] = field(default_factory=list)
     log_level: str = 'warning'
     report_format: str = 'markdown'
@@ -39,16 +38,7 @@ def load_config_from_toml(config_file: Path) -> ValidatorConfig:
 
     validator_parameters = config_content.get('validator', {})
 
-    path_to_explore: Optional[Path] = validator_parameters.get('path_to_explore', None)
-    if path_to_explore is not None:
-        path_to_explore = Path(validator_parameters['path_to_explore'])
-        if not path_to_explore.is_absolute():
-            path_to_explore = Path.cwd() / path_to_explore
-        path_to_explore=path_to_explore.resolve()
-        log.debug('Путь к файлу конфигурации: %s', path_to_explore)
-
     config =ValidatorConfig(
-        path_to_explore=path_to_explore if 'path_to_explore' in validator_parameters else None,
         output_file=Path(validator_parameters['output_file']) if 'output_file' in validator_parameters else None,
         exclude_patterns=validator_parameters.get('exclude_patterns', []),
         log_level=validator_parameters.get('log_level', 'warning'),

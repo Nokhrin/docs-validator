@@ -8,7 +8,6 @@ class TestConfig:
     def test_default_values(self):
         """Конфигурация корректна, все параметры по умолчанию."""
         config = ValidatorConfig()
-        assert config.path_to_explore is None
         assert config.exclude_patterns == []
         assert config.log_level == 'warning'
         assert config.report_format == 'markdown'
@@ -20,7 +19,6 @@ class TestConfig:
         """Конфигурация корректна, все параметры указаны в файле."""
         config = load_config_from_toml(config_toml)
 
-        assert config.path_to_explore == Path(temp_docs_dir / 'docs')
         assert config.exclude_patterns == ['.git', 'node_modules']
         assert config.log_level == 'debug'
         assert config.report_format == 'json'
