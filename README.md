@@ -1,98 +1,111 @@
 # Documentation Link Validator
 
-## Зачем вам этот инструмент
+Статический анализатор связности документации для репозиториев на базе Markdown. Инструмент обнаруживает битые ссылки, файлы-сироты, отсутствующие якоря и циклические зависимости, генерируя отчеты в форматах Markdown, HTML или JSON для интеграции в CI/CD.
 
-Проблема: В больших проектах документация фрагментируется - ссылки ведут на удаленные файлы, якоря устарели после рефакторинга, важные страницы стали «сиротами» без входящих ссылок. Пользователи теряют время, разработчики получают лишние баг-репорты.
+## Установка
 
-Решение: `docs-validator` автоматически проверяет целостность документации перед каждым релизом и находит проблемы до того, как их заметят пользователи.
+### Требования
+- Python 3.13 или выше.
 
-Результат: Вы получаете отчет в формате Markdown или HTML с полным списком проблем - битые ссылки, файлы-сироты, отсутствующие якоря, циклические зависимости. Отчет можно интегрировать в CI/CD для автоматической блокировки merge при критических ошибках.
+```shell
+# 1. Переход в каталог проекта с документацией
+cd ~/projects/notes_and_thoughts/
 
----
-
-## Что вы получаете
-
-### Артефакты
-
-| Формат    | Файл          | Как использовать                                               |
-|-----------|---------------|----------------------------------------------------------------|
-| Markdown  | `report.md`   | Просмотр в любом текстовом редакторе, публикация в репозитории |
-| HTML      | `report.html` | Открытие в браузере, навигация по секциям, отправка заказчику  |
-| JSON      | `report.json` | Парсинг скриптами, интеграция с внешними системами             |
-| CI Status | Exit code     | `0` = успешно, `1` = найдены ошибки уровня ERROR               |
-
-### Пример отчета (Markdown)
-
-```markdown
-# Documentation Validator Report
-
-Total files: 42
-Total links: 156
-Issues found: 3
-
-## Issues
-
-- [ERROR] broken_link: Не найден адресуемый файл: ./missing.md
-  - File: README.md:строка 15
-- [WARNING] orphan_file: Файл guide/unused.md не содержит входящих ссылок
-  - File: guide/unused.md
-- [ERROR] missing_anchor: Якорь "#installation" не найден в файле setup.md
-  - File: README.md:строка 42
-
-## Files
-
-### README.md
-- Title: Главный документ
-- Links found: 12
-
-| Type | URI | Anchor | Line |
-|--------|-----|--------|-------|
-| INTERNAL | ./guide/setup.md | - | 15 |
-| INTERNAL | ./api/reference.md | installation | 42 |
-
-```
-
----
-
-## Быстрый старт
-
-### Установка
-
-```bash
-# Клонировать репозиторий
-git clone https://github.com/Nokhrin/docs-validator.git
-cd docs-validator
-
-# Создать и активировать venv
+# 2. Создание и активация виртуального окружения
 python3.13 -m venv .venv
 source .venv/bin/activate
 
-# Установить проект + dev-зависимости
-pip install -e ".[dev]"
+# 3. Установка docs-validator напрямую из GitHub
+pip install git+https://github.com/Nokhrin/docs-validator.git
+
+# Проверка установки
+docs-validator --help
+```
+После установки команда `docs-validator` станет доступна в терминале.
+
+---
+
+## Сценарии использования
+
+### 1. Базовое сканирование
+Быстрая проверка целостности ссылок без генерации файла отчета (вывод в консоль).
+
+```shell
+docs-validator scan ./docs
 ```
 
-### Проверка документации проекта
+### 2. Генерация отчета в Markdown
+Создание текстового отчета с таблицами для публикации в репозитории или просмотра в редакторе.
 
-```bash
-# Базовая проверка с выводом в консоль
-docs-validator scan ./docs
+```shell
+docs-validator scan ./docs \
+  --report markdown \
+  --output /tmp/report.md
+```
 
-# Генерация Markdown-отчета
-docs-validator scan ./docs --report markdown --output report.md
+### 3. Генерация интерактивного HTML-отчета
+Создание визуального отчета
 
-# Генерация HTML-отчета с навигацией
-docs-validator scan ./docs --report html --output report.html
+```shell
+docs-validator scan ./docs \
+  --report html \
+  --output /tmp/report.html
+```
 
-# Строгий режим: exit code 1 при ошибках ERROR
-docs-validator scan ./docs --validate --fail-on-error
+### 4. Интеграция в CI/CD (Строгий режим)
+Запуск валидации с возвратом кода ошибки `1` при обнаружении проблем уровня `ERROR`. Используется в пайплайнах сборки для блокировки merge.
+
+```shell
+docs-validator scan ./docs \
+  --validate \
+  --fail-on-error
+```
+
+### 5. Использование конфигурационного файла
+Автоматическое применение настроек из файла `.docs-validator.toml`, лежащего в корне проекта. Позволяет не передавать флаги вручную.
+
+**Файл `.docs-validator.toml`:**
+```shell
+cat > .docs-validator.toml << 'EOF'
+[validator]
+path_to_explore = "./docs"
+exclude_patterns = [".git", "node_modules", "*.tmp"]
+log_level = "warning"
+report_format = "markdown"
+is_validate = true
+is_fail_on_error = true
+EOF
+```
+
+**Запуск:**
+```shell
+# Параметры подтянутся из файла автоматически
+docs-validator scan
+```
+
+### 6. Исключение специфичных каталогов
+Временное исключение директорий через аргументы командной строки (приоритет над конфигом).
+
+```shell
+docs-validator scan ./docs --exclude runbook
 ```
 
 ---
 
-[Архитектура](docs/architecture.md)
-[Спецификация](docs/specification.md)
-[Разработка](docs/development.md)
-[Реализация возможностей](docs/implementation.md)
+## Архитектура и возможности
+
+Инструмент реализует следующие ключевые функции:
+1.  **Сканирование файлов**: Рекурсивный обход каталогов, поддержка `.md` и `.markdown`.
+2.  **Построение графа связности**: Анализ внутренних ссылок для выявления структуры документации.
+3.  **Валидация**:
+    *   `BrokenLinkValidator`: Проверка существования целевых файлов.
+    *   `OrphanFileValidator`: Поиск изолированных страниц.
+    *   `AnchorLinkValidator`: Проверка корректности якорей разделов.
+    *   `CircularDependencyValidator`: Обнаружение циклических зависимостей.
+4.  **Отчетность**: Генерация отчетов в форматах Markdown, HTML, JSON.
+5.  **Конфигурация**: Поддержка файла `.docs-validator.toml` с гибкими настройками исключений и поведения.
+
+[Подробнее об архитектуре](docs/architecture.md) | [Спецификация](docs/specification.md) | [Руководство разработчика](docs/development.md)
 
 ---
 
