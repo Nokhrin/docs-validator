@@ -6,6 +6,7 @@ readme = "README.md"
 keywords = ["documentation", "links", "validator", "markdown"]
 dependencies = [
     "networkx==3.6.1",
+    "requests==2.34.2",
 ]
 
 [build-system]

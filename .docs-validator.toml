@@ -4,3 +4,6 @@ log_level = "warning"
 report_format = "markdown"
 is_validate = true
 is_fail_on_error = true
+external_timeout_sec = 5
+external_max_workers = 1
+hosts_to_ignore = ["localhost", "127.0.0.1"]

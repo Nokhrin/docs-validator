@@ -217,5 +217,8 @@ def config_toml(temp_docs_dir):
     output_file = "./report.json"
     is_validate = true
     is_fail_on_error = true
+    external_timeout_sec = 5
+    external_max_workers = 1
+    hosts_to_ignore = ["localhost", "127.0.0.1"]
     """)
     return config_file

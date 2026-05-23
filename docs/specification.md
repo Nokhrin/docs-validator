@@ -58,4 +58,16 @@
 | 4.1 | AnchorValidator                   | `src/validator/validators/anchor.py`   | Проверка якорей в файлах                            | done   |
 | 4.2 | CircularDependencyValidator       | `src/validator/validators/circular.py` | Обнаружение циклов                                  | done   |
 | 4.3 | Применении конфигурации из файла  | `src/validator/config.py`              | `.docs-validator.toml`                              | done   |
-| 4.4 | Тестирование на реальных проектах | `tests/integration/`                   | Успешная валидация `notes_and_thoughts`, `playbook` | wip    |
+| 4.4 | Тестирование на реальных проектах | `tests/integration/`                   | Успешная валидация `notes_and_thoughts`, `playbook` | done   |
+
+
+## Спринт 5: Валидация внешних ссылок
+
+| Шаг | Задача                                      | Файл                                        | Статус |
+|-----|---------------------------------------------|---------------------------------------------|--------|
+| 5.1 | Добавление HTTP-клиента и конфигурации сети | `pyproject.toml`, `src/validator/config.py` | wip    |
+| 5.2 | Реализация `ExternalLinkValidator`          | `src/validator/validators/external_link.py` |        |
+| 5.3 | Интеграция валидатора в CLI                 | `src/validator/cli.py`                      |        |
+| 5.4 | Расширение статистики ссылок                | `src/validator/cli.py`, репортеры           |        |
+| 5.5 | Тестирование сетевой логики                 | `tests/unit/test_external_link.py`          |        |
+| 5.6 | Документация                                | `docs/implementation.md`, `README.md`       |        |
