@@ -1,11 +1,12 @@
 """Глобальные фикстуры для тестов."""
 import re
-
-import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+import pytest
+
 from validator.cli import create_parser
-from validator.config import ValidatorConfig, DEFAULT_CONFIG_FILENAME
+from validator.config import DEFAULT_CONFIG_FILENAME
 from validator.core.connectivity_graph import ConnectivityGraph
 from validator.core.models import DocumentationFile, Link, LinkType
 

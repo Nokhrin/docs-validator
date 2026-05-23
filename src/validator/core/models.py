@@ -164,3 +164,11 @@ class ValidationResult:
             True если нет ERROR issues
         """
         return not self.has_errors
+
+
+@dataclass(frozen=True)
+class LinkStatistics:
+    internal_total: int = 0
+    external_total: int = 0
+    external_valid: int = 0
+    external_broken: int = 0

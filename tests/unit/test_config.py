@@ -17,6 +17,7 @@ class TestConfig:
         assert config.external_timeout_sec == 10
         assert config.max_threads_number == 5
         assert config.hosts_to_ignore == []
+        assert config.is_skip_external == False
 
     def test_load_config_from_toml(self, config_toml, temp_docs_dir):
         """Конфигурация корректна, все параметры указаны в файле."""
@@ -31,3 +32,4 @@ class TestConfig:
         assert config.external_timeout_sec == 5
         assert config.max_threads_number == 1
         assert config.hosts_to_ignore == ["localhost", "127.0.0.1"]
+        assert config.is_skip_external == False

@@ -7,3 +7,4 @@ is_fail_on_error = true
 external_timeout_sec = 5
 max_threads_number = 1
 hosts_to_ignore = ["localhost", "127.0.0.1"]
+is_skip_external = true

@@ -3,16 +3,18 @@
 """
 from pathlib import Path
 
-from validator.core.models import DocumentationFile, ValidationIssue
+from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics
 from validator.reporters.base_reporter import BaseReporter
 
 
 class MarkdownReporter(BaseReporter):
     """Возвращает отчет в формате markdown."""
+
     def report(
             self,
             files: dict[Path, DocumentationFile],
             issues: list[ValidationIssue],
+            link_stat: LinkStatistics = None,
     ) -> str:
         report_lines = [
             '# Отчет валидатора документации',
@@ -23,6 +25,12 @@ class MarkdownReporter(BaseReporter):
             f'**Всего проблем:** {len(issues)}',
             '',
         ]
+
+        if link_stat is not None:
+            report_lines.extend([
+                f'**Внутренних ссылок:** {link_stat.internal_total}',
+                f'**Внешних ссылок:** {link_stat.external_total} (доступно: {link_stat.external_valid}, недоступно: {link_stat.external_broken})',
+            ])
 
         # issues
         if issues:

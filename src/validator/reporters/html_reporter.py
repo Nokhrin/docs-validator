@@ -2,7 +2,7 @@
 Отчет в html.
 """
 from pathlib import Path
-from validator.core.models import DocumentationFile, ValidationIssue
+from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics
 from validator.reporters.base_reporter import BaseReporter
 
 
@@ -10,11 +10,17 @@ class HTMLReporter(BaseReporter):
     """Генерирует отчет в формате HTML."""
 
     def report(
-        self,
-        files: dict[Path, DocumentationFile],
-        issues: list[ValidationIssue],
+            self,
+            files: dict[Path, DocumentationFile],
+            issues: list[ValidationIssue],
+            link_stat: LinkStatistics | None = None,
     ) -> str:
         """Возвращает HTML-отчет."""
+        int_total = link_stat.internal_total if link_stat else 0
+        ext_total = link_stat.external_total if link_stat else 0
+        ext_valid = link_stat.external_valid if link_stat else 0
+        ext_broken = link_stat.external_broken if link_stat else 0
+
         html_parts = [
             '<!DOCTYPE html>',
             '<html lang="ru">',
@@ -31,7 +37,7 @@ class HTMLReporter(BaseReporter):
             '<h1>🔍 Отчет валидатора документации</h1>',
             '</header>',
             '<main>',
-            self._render_summary(files, issues),
+            self._render_summary(files, issues, int_total, ext_total, ext_valid, ext_broken),
             self._render_issues(issues),
             self._render_files(files),
             '</main>',
@@ -160,9 +166,13 @@ class HTMLReporter(BaseReporter):
         """
 
     def _render_summary(
-        self,
-        files: dict[Path, DocumentationFile],
-        issues: list[ValidationIssue],
+            self,
+            files: dict[Path, DocumentationFile],
+            issues: list[ValidationIssue],
+            internal_total: int,
+            external_total: int,
+            external_valid: int,
+            external_broken: int,
     ) -> str:
         """Рендерит сводку."""
         total_files = len(files)
@@ -174,22 +184,12 @@ class HTMLReporter(BaseReporter):
         <section id="summary">
             <h2>📊 Сводка</h2>
             <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-value">{total_files}</div>
-                    <div>Файлов</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{total_links}</div>
-                    <div>Ссылок</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="color: #f44336;">{error_count}</div>
-                    <div>Ошибок</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="color: #ff9800;">{warning_count}</div>
-                    <div>Предупреждений</div>
-                </div>
+                <div class="stat-card"><div class="stat-value">{total_files}</div><div>Файлов</div></div>
+                <div class="stat-card"><div class="stat-value">{total_links}</div><div>Ссылок</div></div>
+                <div class="stat-card"><div class="stat-value" style="color: #2196f3;">{internal_total}</div><div>Внутренних</div></div>
+                <div class="stat-card"><div class="stat-value" style="color: #2196f3;">{external_total}</div><div>Внешних</div></div>
+                <div class="stat-card"><div class="stat-value" style="color: #4caf50;">{external_valid}</div><div>Доступных внешних</div></div>
+                <div class="stat-card"><div class="stat-value" style="color: #f44336;">{external_broken}</div><div>Битых внешних</div></div>
             </div>
         </section>
         """
