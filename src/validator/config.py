@@ -19,7 +19,7 @@ class ValidatorConfig:
     is_validate: bool = False
     is_fail_on_error: bool = False
     external_timeout_sec: int = 10
-    external_max_workers: int = 5
+    max_threads_number: int = 5
     hosts_to_ignore: list[str] = field(default_factory=list)
 
 def load_config_from_toml(config_file: Path) -> ValidatorConfig:
@@ -49,7 +49,7 @@ def load_config_from_toml(config_file: Path) -> ValidatorConfig:
         is_validate=validator_parameters.get('is_validate', False),
         is_fail_on_error=validator_parameters.get('is_fail_on_error', False),
         external_timeout_sec=validator_parameters.get('external_timeout_sec', 10),
-        external_max_workers=validator_parameters.get('external_max_workers', 5),
+        max_threads_number=validator_parameters.get('max_threads_number', 5),
         hosts_to_ignore=validator_parameters.get('hosts_to_ignore', []),
     )
 

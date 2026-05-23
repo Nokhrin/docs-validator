@@ -15,7 +15,7 @@ class TestConfig:
         assert config.is_validate is False
         assert config.is_fail_on_error is False
         assert config.external_timeout_sec == 10
-        assert config.external_max_workers == 5
+        assert config.max_threads_number == 5
         assert config.hosts_to_ignore == []
 
     def test_load_config_from_toml(self, config_toml, temp_docs_dir):
@@ -29,5 +29,5 @@ class TestConfig:
         assert config.is_validate is True
         assert config.is_fail_on_error is True
         assert config.external_timeout_sec == 5
-        assert config.external_max_workers == 1
+        assert config.max_threads_number == 1
         assert config.hosts_to_ignore == ["localhost", "127.0.0.1"]

@@ -22,6 +22,7 @@ dev = [
     "Pygments==2.20.0",
     "pytest==9.0.3",
     "pytest-cov==7.1.0",
+    "responses==0.26.1",
 ]
 
 [project.scripts]
@@ -36,9 +37,6 @@ addopts = [
     "-vv",
     "--tb=short",
     "--strict-markers",
-    "--cov=src/validator",
-    "--cov-report=term",
-    "--cov-report=xml",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
