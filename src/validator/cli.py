@@ -34,10 +34,10 @@ from validator import setup_logging
 from validator.config import load_config_from_toml, ValidatorConfig, DEFAULT_CONFIG_FILENAME
 from validator.core.files_explorer import FilesExplorer
 from validator.core.link_extractor import LinkExtractor
-from validator.core.models import DocumentationFile, ValidationIssue, SeverityLevel
+from validator.core.models import DocumentationFile, ValidationIssue, SeverityLevel, LinkType, IssueType
 from validator.reporters import HTMLReporter, MarkdownReporter, JSONReporter
 from validator.validators import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
-    CircularDependencyValidator
+    CircularDependencyValidator, ExternalLinkValidator
 
 log = logging.getLogger(__name__)
 
@@ -74,11 +74,13 @@ def create_parser() -> ArgumentParser:
       %(prog)s scan ./docs --exclude .git --exclude_patterns node_modules
       """,
     )
+
     scan_parser.add_argument(
         'path_to_explore',
         type=Path,
         help='Path to documentation directory (positional, required)',
     )
+
     scan_parser.add_argument(
         '--report',
         choices=['markdown', 'json', 'html'],
@@ -86,12 +88,14 @@ def create_parser() -> ArgumentParser:
         dest='report_format',
         help='Report format: markdown, json, html (default: markdown)',
     )
+
     scan_parser.add_argument(
         '--output',
         type=Path,
         dest='output_file',
         help='Output file path (default: stdout)',
     )
+
     scan_parser.add_argument(
         '--exclude',
         action='append',
@@ -99,28 +103,39 @@ def create_parser() -> ArgumentParser:
         dest='exclude_patterns',
         help='pattern to exlcude (can be specified multiple times)',
     )
+
     scan_parser.add_argument(
         '--log-level',
         choices=['debug', 'info', 'warning', 'error'],
         default='warning',
         help='Logging level: debug, info, warning, error (default: warning)',
     )
+
     scan_parser.add_argument(
         '--validate',
         action='store_true',
         dest='is_validate',
         help='Run validators after scanning',
     )
+
     scan_parser.add_argument(
         '--fail-on-error',
         action='store_true',
         dest='is_fail_on_error',
         help='Exit with code 1 if any ERROR issues found',
     )
+
     scan_parser.add_argument(
         '--config',
         type=Path,
-        help='Путь к файлу конфигурации (по умолчанию: ./.docs-validator.toml)',
+        help='Configuration file path (default: ./.docs-validator.toml)',
+    )
+
+    scan_parser.add_argument(
+        '--skip-external',
+        action='store_true',
+        dest='is_skip_external',
+        help='Skip external links verification',
     )
 
     return parser
@@ -152,6 +167,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     report_format = args.report_format or config_effective.report_format
     is_validate = args.is_validate or config_effective.is_validate
     is_fail_on_error = args.is_fail_on_error or config_effective.is_fail_on_error
+    is_skip_external = args.is_skip_external or config_effective.is_skip_external
 
     setup_logging(log_level.upper())
 
@@ -196,6 +212,15 @@ def cmd_scan(args: argparse.Namespace) -> int:
             AnchorLinkValidator(),
             CircularDependencyValidator(),
         ]
+
+        if not is_skip_external:
+            validators.append(
+                ExternalLinkValidator(
+                    external_timeout_sec=config_effective.external_timeout_sec,
+                    max_threads_number=config_effective.max_threads_number,
+                    hosts_to_ignore=config_effective.hosts_to_ignore,
+                )
+            )
 
         for validator in validators:
             issues = validator.validate(files_to_validate, path_to_explore)
@@ -273,6 +298,20 @@ def cmd_scan(args: argparse.Namespace) -> int:
         return 0
 
     # генерация отчета
+
+    # агрегация ссылок по типам
+    internal_total: int = 0
+    external_total: int = 0
+    for file in files_explored:
+        for link in file.links_out:
+            if link.link_type is LinkType.INTERNAL:
+                internal_total += 1
+            elif link.link_type is LinkType.EXTERNAL:
+                external_total += 1
+
+    external_broken: int = sum(1 for issue in issues_explored if issue.issue_type is IssueType.EXTERNAL_UNREACHABLE)
+    external_valid: int = external_total - external_broken
+
     files_to_report = {f.path: f for f in files_explored}
     reporters: dict[str, Callable[[dict, list], str]] = {
         'json': lambda _files, _issues: JSONReporter.report(_files, _issues),
@@ -305,6 +344,8 @@ def cmd_scan(args: argparse.Namespace) -> int:
         "=" * 40,
         f"Обработано файлов: {files_total}",
         f"Обнаружено ссылок: {links_total}",
+        f"Внутренних ссылок: {internal_total}",
+        f"Внешних ссылок: {external_total} (доступно: {external_valid}, недоступно: {external_broken})",
     ]
 
     if issues_explored:

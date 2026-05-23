@@ -95,6 +95,7 @@ class TestCliAllFlags:
         assert args.log_level == 'warning'
         assert args.is_validate is False
         assert args.is_fail_on_error is False
+        assert args.is_skip_external is False
 
     def test_report_markdown(self, parser):
         """Флаг --report markdown."""
@@ -187,6 +188,7 @@ class TestCliAllFlags:
             '--log-level', 'debug',
             '--validate',
             '--fail-on-error',
+            '--skip-external',
         ])
 
         assert args.command == 'scan'
@@ -197,6 +199,7 @@ class TestCliAllFlags:
         assert args.log_level == 'debug'
         assert args.is_validate is True
         assert args.is_fail_on_error is True
+        assert args.is_skip_external is True
 
     def test_help_flag(self, parser, capsys):
         """Флаг --help выводит справку."""
@@ -207,3 +210,13 @@ class TestCliAllFlags:
         captured = capsys.readouterr()
         assert 'scan' in captured.out
         assert 'documentation' in captured.out.lower()
+
+    def test_skip_external_flag_present(self, parser):
+        """Флаг --skip-external устанавливает is_skip_external в True."""
+        args = parser.parse_args(['scan', './docs', '--skip-external'])
+        assert args.is_skip_external is True
+
+    def test_skip_external_flag_absent(self, parser):
+        """Флаг --skip-external отсутствует по умолчанию (False)."""
+        args = parser.parse_args(['scan', './docs'])
+        assert args.is_skip_external is False
