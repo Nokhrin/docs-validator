@@ -12,7 +12,7 @@ class BaseReporter(ABC):
             self,
             files: dict[Path, DocumentationFile],
             issues: list[ValidationIssue],
-            link_stat: LinkStatistics | None,
+            link_stat: LinkStatistics,
     ) -> str:
         """Возвращает отчет по результатам валидации."""
         pass

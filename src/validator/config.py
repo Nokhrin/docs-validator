@@ -12,6 +12,7 @@ DEFAULT_CONFIG_FILENAME = '.docs-validator.toml'
 
 @dataclass
 class ValidatorConfig:
+    path_to_explore: Optional[Path] = None
     exclude_patterns: list[str] = field(default_factory=list)
     log_level: str = 'warning'
     report_format: str = 'markdown'

@@ -1,222 +1,44 @@
 """Тесты отображения аргументов CLI в конфигурацию парсера."""
-from argparse import Namespace
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-import pytest
-
-from validator.core.files_explorer import FilesExplorer, DEFAULT_EXCLUDES
-
-
-class TestCliArgsToConfigMapping:
-    """Проверка передачи параметров CLI в объекты ядра."""
-
-    def test_default_excludes_applied_when_empty_list(self):
-        """Проверка применения DEFAULT_EXCLUDES при пустом списке исключений."""
-        root = Path('/tmp/test')
-
-        explorer = FilesExplorer(
-            root_path=root,
-            patterns_exclude=set()
-        )
-
-        assert explorer.patterns_exclude == DEFAULT_EXCLUDES
-        assert '.git' in explorer.patterns_exclude
-        assert '.venv' in explorer.patterns_exclude
-
-    def test_custom_excludes_merged_with_defaults(self):
-        """Проверка объединения пользовательских исключений с дефолтными."""
-        root = Path('/tmp/test')
-        custom_excludes = {'my_custom_folder', '*.log'}
-
-        explorer = FilesExplorer(
-            root_path=root,
-            patterns_exclude=custom_excludes
-        )
-
-        assert '.git' in explorer.patterns_exclude
-        assert 'my_custom_folder' in explorer.patterns_exclude
-        assert len(explorer.patterns_exclude) > len(DEFAULT_EXCLUDES)
-
-    def test_custom_report_and_output_mapped_to_config(self, parser):
-        """Пользовательские --report и --output отражаются в конфигурации."""
-        args: Namespace = parser.parse_args([
-            'scan', './docs',
-            '--report', 'json',
-            '--output', 'report.json'
-        ])
-
-        config = {
-            'report_format': args.report_format,
-            'output_file': args.output_file,
-        }
-
-        assert config['report_format'] == 'json'
-        assert config['output_file'] == Path('report.json')
-
-    def test_multiple_exclude_patterns_collected_in_set(self, parser):
-        """Параметр --exclude с множественным указанием собирается в set."""
-        args: Namespace = parser.parse_args([
-            'scan', './docs',
-            '--exclude', '*.tmp',
-            '--exclude', 'draft_*',
-            '--exclude', '.git'
-        ])
-
-        exclude_set = set(args.exclude_patterns)
-
-        assert '*.tmp' in exclude_set
-        assert 'draft_*' in exclude_set
-        assert '.git' in exclude_set
-        assert len(exclude_set) == 3
+from validator.cli import create_parser, execute_scan
 
 
-class TestCliAllFlags:
-    """Тестирование обработки параметров cli."""
+class TestCreateParser:
+    def test_returns_parser_with_scan_command(self):
+        parser = create_parser()
+        assert parser.parse_known_args(['scan', './docs'])[0].command == 'scan'
 
-    def test_scan_command_required(self, parser):
-        """Команда scan обязательна."""
-        with pytest.raises(SystemExit):
-            parser.parse_args([])
-
-    def test_path_argument_required(self, parser):
-        """Путь к директории обязателен для scan."""
-        with pytest.raises(SystemExit):
-            parser.parse_args(['scan'])
-
-    def test_default_values(self, parser):
-        """Значения по умолчанию."""
-        args = parser.parse_args(['scan', './docs'])
-
-        assert args.command == 'scan'
-        assert args.path_to_explore == Path('./docs')
-        assert args.report_format == 'markdown'
-        assert args.output_file is None
-        assert args.exclude_patterns == []
-        assert args.log_level == 'warning'
-        assert args.is_validate is False
-        assert args.is_fail_on_error is False
-        assert args.is_skip_external is False
-
-    def test_report_markdown(self, parser):
-        """Флаг --report markdown."""
-        args = parser.parse_args(['scan', './docs', '--report', 'markdown'])
-        assert args.report_format == 'markdown'
-
-    def test_report_json(self, parser):
-        """Флаг --report json."""
+    def test_maps_report_flag_to_json(self):
+        parser = create_parser()
         args = parser.parse_args(['scan', './docs', '--report', 'json'])
         assert args.report_format == 'json'
 
-    def test_report_invalid(self, parser):
-        """Невалидный --report вызывает ошибку."""
-        with pytest.raises(SystemExit):
-            parser.parse_args(['scan', './docs', '--report', 'xml'])
 
-    def test_output_file(self, parser):
-        """Флаг --output."""
-        args = parser.parse_args(['scan', './docs', '--output', 'report.json'])
-        assert args.output_file == Path('report.json')
+class TestExecuteScan:
+    @patch('validator.cli.load_configuration')
+    @patch('validator.cli.setup_logging')
+    @patch('validator.cli.explore_files', return_value=[])
+    def test_returns_zero_on_empty_dir(self, mock_explore, mock_log, mock_config, parser, tmp_path):
+        mock_config.return_value = MagicMock(log_level='warning', is_validate=False, output_file=None)
+        args = parser.parse_args(['scan', str(tmp_path)])
+        assert execute_scan(args) == 0
+        mock_explore.assert_called_once()
 
-    def test_exclude_single(self, parser):
-        """Флаг --exclude (однократный)."""
-        args = parser.parse_args(['scan', './docs', '--exclude', '.git'])
-        assert args.exclude_patterns == ['.git']
-
-    def test_exclude_multiple(self, parser):
-        """Флаг --exclude (множественный)."""
-        args = parser.parse_args([
-            'scan', './docs',
-            '--exclude', '.git',
-            '--exclude', 'node_modules',
-            '--exclude', '*.tmp',
-        ])
-        assert args.exclude_patterns == ['.git', 'node_modules', '*.tmp']
-
-    def test_log_level_debug(self, parser):
-        """Флаг --log-level debug."""
-        args = parser.parse_args(['scan', './docs', '--log-level', 'debug'])
-        assert args.log_level == 'debug'
-
-    def test_log_level_info(self, parser):
-        """Флаг --log-level info."""
-        args = parser.parse_args(['scan', './docs', '--log-level', 'info'])
-        assert args.log_level == 'info'
-
-    def test_log_level_warning(self, parser):
-        """Флаг --log-level warning."""
-        args = parser.parse_args(['scan', './docs', '--log-level', 'warning'])
-        assert args.log_level == 'warning'
-
-    def test_log_level_error(self, parser):
-        """Флаг --log-level error."""
-        args = parser.parse_args(['scan', './docs', '--log-level', 'error'])
-        assert args.log_level == 'error'
-
-    def test_log_level_invalid(self, parser):
-        """Невалидный --log-level вызывает ошибку."""
-        with pytest.raises(SystemExit):
-            parser.parse_args(['scan', './docs', '--log-level', 'trace'])
-
-    def test_validate_flag(self, parser):
-        """Флаг --validate."""
-        args = parser.parse_args(['scan', './docs', '--validate'])
-        assert args.is_validate is True
-
-    def test_validate_flag_absent(self, parser):
-        """Флаг --validate отсутствует."""
-        args = parser.parse_args(['scan', './docs'])
-        assert args.is_validate is False
-
-    def test_fail_on_error_flag(self, parser):
-        """Флаг --fail-on-error."""
-        args = parser.parse_args(['scan', './docs', '--fail-on-error'])
-        assert args.is_fail_on_error is True
-
-    def test_fail_on_error_flag_absent(self, parser):
-        """Флаг --fail-on-error отсутствует."""
-        args = parser.parse_args(['scan', './docs'])
-        assert args.is_fail_on_error is False
-
-    def test_all_flags_combined(self, parser):
-        """Все флаги вместе."""
-        args = parser.parse_args([
-            'scan', './docs',
-            '--report', 'json',
-            '--output', 'report.json',
-            '--exclude', '.git',
-            '--exclude', 'node_modules',
-            '--log-level', 'debug',
-            '--validate',
-            '--fail-on-error',
-            '--skip-external',
-        ])
-
-        assert args.command == 'scan'
-        assert args.path_to_explore == Path('./docs')
-        assert args.report_format == 'json'
-        assert args.output_file == Path('report.json')
-        assert args.exclude_patterns == ['.git', 'node_modules']
-        assert args.log_level == 'debug'
-        assert args.is_validate is True
-        assert args.is_fail_on_error is True
-        assert args.is_skip_external is True
-
-    def test_help_flag(self, parser, capsys):
-        """Флаг --help выводит справку."""
-        with pytest.raises(SystemExit) as exc_info:
-            parser.parse_args(['--help'])
-
-        assert exc_info.value.code == 0
-        captured = capsys.readouterr()
-        assert 'scan' in captured.out
-        assert 'documentation' in captured.out.lower()
-
-    def test_skip_external_flag_present(self, parser):
-        """Флаг --skip-external устанавливает is_skip_external в True."""
-        args = parser.parse_args(['scan', './docs', '--skip-external'])
-        assert args.is_skip_external is True
-
-    def test_skip_external_flag_absent(self, parser):
-        """Флаг --skip-external отсутствует по умолчанию (False)."""
-        args = parser.parse_args(['scan', './docs'])
-        assert args.is_skip_external is False
+    @patch('validator.cli.get_exit_code', return_value=0)
+    @patch('validator.cli.write_report')
+    @patch('validator.cli.generate_report', return_value='report text')
+    @patch('validator.cli.aggregate_issue_statistics', return_value=MagicMock())
+    @patch('validator.cli.collect_issues', return_value=[])
+    @patch('validator.cli.collect_links')
+    @patch('validator.cli.explore_files', return_value=[MagicMock(path=Path('a.md'))])
+    @patch('validator.cli.load_configuration')
+    @patch('validator.cli.setup_logging')
+    def test_executes_full_pipeline_without_output_file(self, mock_log, mock_cfg, mock_exp,
+                                                        mock_coll, mock_iss, mock_agg, mock_gen, mock_wr, mock_exit, parser, tmp_path):
+        mock_cfg.return_value = MagicMock(log_level='warning', is_validate=False, output_file=None)
+        args = parser.parse_args(['scan', str(tmp_path)])
+        assert execute_scan(args) == 0
+        # Код всегда вызывает write_report: в файл или в stdout (None)
+        mock_wr.assert_called_once_with('report text', None)

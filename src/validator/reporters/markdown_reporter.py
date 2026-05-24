@@ -14,7 +14,7 @@ class MarkdownReporter(BaseReporter):
             self,
             files: dict[Path, DocumentationFile],
             issues: list[ValidationIssue],
-            link_stat: LinkStatistics = None,
+            link_stat: LinkStatistics,
     ) -> str:
         report_lines = [
             '# Отчет валидатора документации',
@@ -23,14 +23,10 @@ class MarkdownReporter(BaseReporter):
             '',
             f'**Всего файлов:** {len(files)}',
             f'**Всего проблем:** {len(issues)}',
+            f'**Внутренних ссылок:** {link_stat.internal_total} (битых: {link_stat.internal_broken})',
+            f'**Внешних ссылок:** {link_stat.external_total} (битых: {link_stat.external_broken})',
             '',
         ]
-
-        if link_stat is not None:
-            report_lines.extend([
-                f'**Внутренних ссылок:** {link_stat.internal_total}',
-                f'**Внешних ссылок:** {link_stat.external_total} (доступно: {link_stat.external_valid}, недоступно: {link_stat.external_broken})',
-            ])
 
         # issues
         if issues:

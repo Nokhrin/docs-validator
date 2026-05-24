@@ -169,6 +169,6 @@ class ValidationResult:
 @dataclass(frozen=True)
 class LinkStatistics:
     internal_total: int = 0
+    internal_broken: int = 0
     external_total: int = 0
-    external_valid: int = 0
     external_broken: int = 0

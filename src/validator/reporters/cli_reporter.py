@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import TextIO
 
-from validator.core.models import DocumentationFile, ValidationIssue
+from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics
 from validator.reporters import BaseReporter
 
 log = logging.getLogger(__name__)
@@ -40,7 +40,12 @@ class CLIReporter(BaseReporter):
             return color.apply(text)
         return text
 
-    def report(self, files: dict[Path, DocumentationFile], issues: list[ValidationIssue]) -> str:
+    def report(
+            self,
+            files: dict[Path, DocumentationFile],
+            issues: list[ValidationIssue],
+            link_stat: LinkStatistics,
+    ) -> str:
         """Возвращает строку для вывода в поток."""
         if not issues:
             self._write_line(self._colorize('No issues found', TermColor.BLUE))

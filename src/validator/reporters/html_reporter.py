@@ -13,12 +13,12 @@ class HTMLReporter(BaseReporter):
             self,
             files: dict[Path, DocumentationFile],
             issues: list[ValidationIssue],
-            link_stat: LinkStatistics | None = None,
+            link_stat: LinkStatistics,
     ) -> str:
         """Возвращает HTML-отчет."""
         int_total = link_stat.internal_total if link_stat else 0
         ext_total = link_stat.external_total if link_stat else 0
-        ext_valid = link_stat.external_valid if link_stat else 0
+        ext_valid = link_stat.external_total - link_stat.external_broken if link_stat else 0
         ext_broken = link_stat.external_broken if link_stat else 0
 
         html_parts = [

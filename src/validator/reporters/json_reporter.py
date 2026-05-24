@@ -12,7 +12,7 @@ class JSONReporter(BaseReporter):
             self,
             files: dict[Path, DocumentationFile],
             issues: list[ValidationIssue],
-            link_stat: LinkStatistics | None,
+            link_stat: LinkStatistics,
     ) -> str:
         """Возвращает JSON строку.
         Работает с DocumentationFile

@@ -26,19 +26,16 @@ docs-validator --help
 После установки команда `docs-validator` станет доступна в терминале.
 
 ---
-
 ## Сценарии использования
 
 ### 1. Базовое сканирование
-Быстрая проверка целостности ссылок без генерации файла отчета (вывод в консоль).
+Быстрая проверка целостности ссылок без генерации файла отчета.
 
 ```shell
 docs-validator scan ./docs
 ```
 
 ### 2. Генерация отчета в Markdown
-Создание текстового отчета с таблицами для публикации в репозитории или просмотра в редакторе.
-
 ```shell
 docs-validator scan ./docs \
   --report markdown \
@@ -46,17 +43,13 @@ docs-validator scan ./docs \
 ```
 
 ### 3. Генерация интерактивного HTML-отчета
-Создание визуального отчета
-
 ```shell
 docs-validator scan ./docs \
   --report html \
   --output /tmp/report.html
 ```
 
-### 4. Интеграция в CI/CD (Строгий режим)
-Запуск валидации с возвратом кода ошибки `1` при обнаружении проблем уровня `ERROR`. Используется в пайплайнах сборки для блокировки merge.
-
+### 4. Интеграция в CI/CD (строгий режим)
 ```shell
 docs-validator scan ./docs \
   --validate \
@@ -64,32 +57,31 @@ docs-validator scan ./docs \
 ```
 
 ### 5. Использование конфигурационного файла
-Автоматическое применение настроек из файла `.docs-validator.toml`, лежащего в корне проекта. Позволяет не передавать флаги вручную.
-
-**Файл `.docs-validator.toml`:**
+Файл `.docs-validator.toml`:
 ```shell
 cat > .docs-validator.toml << 'EOF'
 [validator]
-path_to_explore = "./docs"
-exclude_patterns = [".git", "node_modules", "*.tmp"]
-log_level = "warning"
-report_format = "markdown"
+path_to_explore = './docs'
+exclude_patterns = ['.git', 'node_modules', '*.tmp']
+log_level = 'warning'
+report_format = 'markdown'
 is_validate = true
 is_fail_on_error = true
+external_timeout_sec = 10
+max_threads_number = 5
+hosts_to_ignore = ['localhost', '127.0.0.1']
+is_skip_external = false
 EOF
 ```
 
-**Запуск:**
+Запуск:
 ```shell
-# Параметры подтянутся из файла автоматически
 docs-validator scan
 ```
 
-### 6. Исключение специфичных каталогов
-Временное исключение директорий через аргументы командной строки (приоритет над конфигом).
-
+### 6. Пропуск проверки внешних ссылок
 ```shell
-docs-validator scan ./docs --exclude runbook
+docs-validator scan ./docs --skip-external
 ```
 
 ---
