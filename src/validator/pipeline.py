@@ -2,17 +2,17 @@ import logging
 import sys
 from argparse import Namespace
 from contextlib import contextmanager
+from dataclasses import replace, fields
 from pathlib import Path
 from typing import Callable, Iterator, TextIO
 
 from validator.config import ValidatorConfig, load_config_from_toml, merge_config
 from validator.core.explorer import FilesExplorer
 from validator.core.extractor import LinkExtractor
-from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, LinkType, SeverityLevel, \
-    IssueType, Link
+from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, LinkType, Link
 from validator.reporters import JSONReporter, MarkdownReporter, HTMLReporter
 from validator.rules import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
-    CircularDependencyValidator, ExternalLinkValidator
+    CircularDependencyValidator, ExternalLinkValidator, BaseValidator
 
 log = logging.getLogger(__name__)
 
@@ -22,16 +22,18 @@ def load_configuration(args: Namespace) -> ValidatorConfig:
 
     Приоритет конфигурации: cli, toml, default
     """
-    config = ValidatorConfig()
+    config = ValidatorConfig(args.path_to_explore)
 
-    config_file = Path.cwd() / '.docs-validator.toml'
+    config_file = Path(args.config) if args.config else Path.cwd() / '.docs-validator.toml'
     if config_file.exists():
         config = merge_config(config, load_config_from_toml(config_file))
 
-    if args.config:
-        config_file = Path(args.config)
-
-    return config
+    valid_fields = {f.name for f in fields(ValidatorConfig)}
+    cli_updates = {
+        k: v for k, v in vars(args).items()
+        if k in valid_fields and v is not None
+    }
+    return replace(config, **cli_updates)
 
 
 def explore_files(path_to_explore: Path, config: ValidatorConfig) -> list[DocumentationFile]:
@@ -76,14 +78,20 @@ def collect_links(files: list[DocumentationFile]) -> list[DocumentationFile]:
 def collect_issues(files: list[DocumentationFile], config: ValidatorConfig) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     if config.is_validate:
+        if config.path_to_explore is None:
+            raise ValueError("Не задан path_to_explore. Валидация невозможна.")
+
         files_to_validate = {file.path: file for file in files}
-        validators = [BrokenLinkValidator(), OrphanFileValidator(), AnchorLinkValidator(), CircularDependencyValidator()]
+        validators: list[BaseValidator] = [
+            BrokenLinkValidator(), OrphanFileValidator(), AnchorLinkValidator(), CircularDependencyValidator()
+        ]
         if not config.is_skip_external:
             validators.append(ExternalLinkValidator(
                 external_timeout_sec=config.external_timeout_sec,
                 max_threads_number=config.max_threads_number,
                 hosts_to_ignore=config.hosts_to_ignore,
             ))
+
         for validator in validators:
             new_issues = validator.validate(files_to_validate, config.path_to_explore)
             issues.extend(new_issues)
@@ -138,7 +146,7 @@ def generate_report(files: dict[Path, DocumentationFile], issues: list[Validatio
         Path(config.output_file).write_text(report, encoding='utf-8')
 
     files_total = len(files)
-    links_total = sum(len(f.links_out) for f in files)
+    links_total = sum(len(f.links_out) for f in files.values())
     summary_lines = [
         "=" * 40, "СТАТИСТИКА ВЫПОЛНЕНИЯ", "=" * 40,
         f"Обработано файлов: {files_total}",

@@ -113,6 +113,9 @@ def create_parser() -> ArgumentParser:
 
 
 def execute_scan(args: argparse.Namespace) -> int:
+    if args.path_to_explore is None:
+        raise ValueError("Обязательный аргумент 'path_to_explore' не передан")
+    
     validation_config = load_configuration(args)
     setup_logging(validation_config.log_level.upper())
 
@@ -131,12 +134,12 @@ def execute_scan(args: argparse.Namespace) -> int:
     if validation_config.is_validate:
         issues = collect_issues(files_explored, validation_config)
 
-    stats = aggregate_issue_statistics(files_explored, issues)
+    stats_issues = aggregate_issue_statistics(files_explored, issues)
 
     report: str = generate_report(
         {f.path: f for f in files_explored},
         issues,
-        stats,
+        stats_issues,
         validation_config,
     )
 

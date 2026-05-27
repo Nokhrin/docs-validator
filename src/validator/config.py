@@ -1,6 +1,6 @@
 """Управление конфигурацией валидатора."""
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields, replace
 from pathlib import Path
 from tomllib import load, TOMLDecodeError
 from typing import Optional, Any
@@ -61,8 +61,10 @@ def load_config_from_toml(config_file: Path) -> ValidatorConfig:
 
 
 def merge_config(config_init: ValidatorConfig, config_to_merge: ValidatorConfig) -> ValidatorConfig:
-    updated_config = asdict(config_init)
-    for conf_key, conf_val in config_to_merge.items():
-        if conf_key in updated_config and conf_val is not None:
-            updated_config[conf_key]=conf_val
-    return ValidatorConfig(**updated_config)
+    """Выполняет слияние конфигураций, возвращает новый экземпляр."""
+    updates = {
+        f.name: getattr(config_to_merge, f.name)
+        for f in fields(config_to_merge)
+        if getattr(config_to_merge, f.name) is not None
+    }
+    return replace(config_init, **updates)

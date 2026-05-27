@@ -6,7 +6,10 @@ from validator.rules.base_validator import BaseValidator
 log = logging.getLogger(__name__)
 
 class BrokenLinkValidator(BaseValidator):
-    """Проверяет существование файлов, на которые указывают internal ссылки."""
+    """Проверяет существование файлов, на которые указывают internal ссылки.
+
+    Работает с локальной файловой системой.
+    """
 
     def validate(self, files_to_validate: dict[Path, DocumentationFile], root_dir: Path) -> list[ValidationIssue]:
         log.debug(f'Начало проверки существования файлов, количество файлов: {len(files_to_validate)}')
@@ -14,8 +17,7 @@ class BrokenLinkValidator(BaseValidator):
         for file in files_to_validate.values():
             for link in file.links_out:
 
-                # TODO - Проверка доступности внешних ссылок
-                if link.is_external or link.target_file is None:
+                if not link.is_internal or link.target_file is None:
                     continue
 
                 target_path = root_dir / link.target_file
