@@ -5,13 +5,13 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, Iterator, TextIO
 
-from validator.config import ValidatorConfig, load_config_from_toml
-from validator.core.files_explorer import FilesExplorer
-from validator.core.link_extractor import LinkExtractor
+from validator.config import ValidatorConfig, load_config_from_toml, merge_config
+from validator.core.explorer import FilesExplorer
+from validator.core.extractor import LinkExtractor
 from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, LinkType, SeverityLevel, \
     IssueType, Link
 from validator.reporters import JSONReporter, MarkdownReporter, HTMLReporter
-from validator.validators import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
+from validator.rules import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
     CircularDependencyValidator, ExternalLinkValidator
 
 log = logging.getLogger(__name__)
@@ -20,37 +20,18 @@ log = logging.getLogger(__name__)
 def load_configuration(args: Namespace) -> ValidatorConfig:
     """Загружает значения параметров конфигурации.
 
-    Источники конфигурации: cli, *.toml
+    Приоритет конфигурации: cli, toml, default
     """
-    DEFAULT_CONFIG_FILENAME = '.docs-validator.toml'
-    config_file = Path.cwd() / DEFAULT_CONFIG_FILENAME
+    config = ValidatorConfig()
+
+    config_file = Path.cwd() / '.docs-validator.toml'
+    if config_file.exists():
+        config = merge_config(config, load_config_from_toml(config_file))
+
     if args.config:
         config_file = Path(args.config)
 
-    default_config = ValidatorConfig(
-            exclude_patterns=args.exclude_patterns,
-            log_level=args.log_level,
-            report_format=args.report_format,
-            output_file=args.output_file,
-            is_validate=args.is_validate,
-            is_fail_on_error=args.is_fail_on_error,
-            external_timeout_sec=args.external_timeout_sec,
-            max_threads_number=args.max_threads_number,
-            hosts_to_ignore=args.hosts_to_ignore,
-            is_skip_external=args.is_skip_external,
-        )
-
-    if not config_file.exists():
-        log.debug('Запрошенный файл конфигурации не найден: %s', config_file)
-        log.debug('Используется конфигурация по умолчанию: %s', default_config)
-        return default_config
-    try:
-        log.debug('Используется файл конфигурации: %s', config_file)
-        return load_config_from_toml(config_file)
-    except IOError as err:
-        log.error('Ошибка при чтении конфигурации %s: %s', config_file, err)
-        log.debug('Используется конфигурация по умолчанию: %s', default_config)
-        return default_config
+    return config
 
 
 def explore_files(path_to_explore: Path, config: ValidatorConfig) -> list[DocumentationFile]:

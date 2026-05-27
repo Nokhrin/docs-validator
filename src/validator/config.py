@@ -1,9 +1,9 @@
 """Управление конфигурацией валидатора."""
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from tomllib import load, TOMLDecodeError
-from typing import Optional
+from typing import Optional, Any
 
 log = logging.getLogger(__name__)
 
@@ -58,3 +58,11 @@ def load_config_from_toml(config_file: Path) -> ValidatorConfig:
 
     log.debug('Конфигурация загружена: %s', config)
     return config
+
+
+def merge_config(config_init: ValidatorConfig, config_to_merge: ValidatorConfig) -> ValidatorConfig:
+    updated_config = asdict(config_init)
+    for conf_key, conf_val in config_to_merge.items():
+        if conf_key in updated_config and conf_val is not None:
+            updated_config[conf_key]=conf_val
+    return ValidatorConfig(**updated_config)

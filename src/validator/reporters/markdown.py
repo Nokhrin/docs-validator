@@ -4,7 +4,7 @@
 from pathlib import Path
 
 from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics
-from validator.reporters.base_reporter import BaseReporter
+from validator.reporters.base import BaseReporter
 
 
 class MarkdownReporter(BaseReporter):

@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from validator.core.models import DocumentationFile, ValidationIssue, IssueType, SeverityLevel
-from validator.validators.base_validator import BaseValidator
+from validator.rules.base_validator import BaseValidator
 
 log = logging.getLogger(__name__)
 

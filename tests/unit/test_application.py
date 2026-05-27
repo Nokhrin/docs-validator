@@ -1,7 +1,7 @@
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 from argparse import Namespace
-from validator.application import (
+from validator.pipeline import (
     load_configuration, explore_files, collect_links, collect_issues,
     aggregate_issue_statistics, generate_report, write_report, get_exit_code
 )
@@ -117,7 +117,7 @@ class TestAggregateIssueStatistics:
         assert stats.internal_broken == 1
 
 from pathlib import Path
-from validator.application import generate_report
+from validator.pipeline import generate_report
 from validator.config import ValidatorConfig
 from validator.core.models import LinkStatistics
 

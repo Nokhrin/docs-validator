@@ -4,7 +4,7 @@ import requests
 import responses
 
 from validator.core.models import DocumentationFile, Link, LinkType, SeverityLevel, IssueType
-from validator.validators import ExternalLinkValidator
+from validator.rules import ExternalLinkValidator
 
 
 class TestExternalLinkValidator:

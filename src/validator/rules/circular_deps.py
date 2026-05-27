@@ -10,7 +10,7 @@ from pathlib import Path
 
 from validator.core.connectivity_graph import ConnectivityGraph
 from validator.core.models import DocumentationFile, ValidationIssue, IssueType, SeverityLevel
-from validator.validators import BaseValidator
+from validator.rules import BaseValidator
 
 log = logging.getLogger(__name__)
 

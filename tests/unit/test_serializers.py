@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from validator.core.models import Link, LinkType, DocumentationFile
-from validator.serializers import link_to_dict, file_to_dict, files_to_json
+from validator.reporters.serializers import link_to_dict, file_to_dict, files_to_json
 
 
 class TestSerializers:

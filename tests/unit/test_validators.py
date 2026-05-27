@@ -5,9 +5,9 @@ from wsgiref.validate import validator
 import pytest
 
 from validator.core.models import IssueType, SeverityLevel, DocumentationFile, Link, LinkType
-from validator.validators import AnchorLinkValidator, CircularDependencyValidator
-from validator.validators.broken_link import BrokenLinkValidator
-from validator.validators.orphan_file import OrphanFileValidator
+from validator.rules import AnchorLinkValidator, CircularDependencyValidator
+from validator.rules.broken_link import BrokenLinkValidator
+from validator.rules.orphan_file import OrphanFileValidator
 
 
 class TestBrokenLinkValidator:

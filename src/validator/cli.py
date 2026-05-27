@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from validator import setup_logging
-from validator.application import load_configuration, explore_files, write_report, get_exit_code, \
+from validator.pipeline import load_configuration, explore_files, write_report, get_exit_code, \
     aggregate_issue_statistics, generate_report, collect_issues, collect_links
 
 log = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ def create_parser() -> ArgumentParser:
         '--validate',
         action='store_true',
         dest='is_validate',
-        help='Run validators after scanning',
+        help='Run rules after scanning',
     )
 
     scan_parser.add_argument(

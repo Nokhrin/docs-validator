@@ -1,10 +1,12 @@
 """Тесты генераторов отчетов."""
-
+import json
 from pathlib import Path
 
-from validator.core.models import DocumentationFile, ValidationIssue, IssueType, SeverityLevel, LinkStatistics
+from validator.core.models import DocumentationFile, ValidationIssue, IssueType, SeverityLevel, LinkStatistics, \
+    LinkType, Link
 from validator.reporters import HTMLReporter
-from validator.reporters.markdown_reporter import MarkdownReporter
+from validator.reporters.json import file_to_dict, files_to_json, link_to_dict
+from validator.reporters.markdown import MarkdownReporter
 
 class TestMarkdownReporter:
     def test_report_header(self):
@@ -100,3 +102,43 @@ class TestHTMLReporter:
         files = {Path('README.md'): DocumentationFile(path=Path('README.md'), title='Readme')}
         report = reporter.report(files, [], stats)
         assert '✅ Проблем не обнаружено' in report
+
+
+class TestSerializers:
+    def test_file_with_links_to_dict_success(self):
+        ftv = DocumentationFile(
+            path=Path('TEST-README.md'),
+            title='TEST-README-TITLE',
+            links_out={
+                Link('./guide.md', LinkType.INTERNAL, Path('TEST-README.md'), 1, 'section1')
+            }
+        )
+        ftv_serialized = file_to_dict(ftv)
+
+        assert len(ftv_serialized['links_out']) == 1
+        assert ftv_serialized['links_out'][0]['uri'] == './guide.md'
+
+    def test_link_to_dict_success(self):
+        link = Link('./guide.md', LinkType.INTERNAL, Path('TEST-README.md'), 1, 'section1')
+        expected = {
+            'uri': './guide.md',
+            'link_type': 'INTERNAL',
+            'source_file': 'TEST-README.md',
+            'line_number': 1,
+            'anchor': 'section1',
+        }
+        actual = link_to_dict(link)
+
+        assert actual == expected
+
+    def test_files_to_json_success(self):
+        ftv_list = [
+            DocumentationFile(path=Path('TEST-README.md'), title='readme'),
+            DocumentationFile(path=Path('TEST-LICENSE.md'), title='license'),
+            ]
+        ftv_list_serialized = files_to_json(ftv_list)
+
+        ftv_list_json = json.loads(ftv_list_serialized)
+        assert len(ftv_list_json) == 2
+        assert ftv_list_json[0]['title'] == 'readme'
+        assert ftv_list_json[1]['path'] == 'TEST-LICENSE.md'

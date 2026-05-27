@@ -1,6 +1,6 @@
 """Тесты для модуля поиска файлов."""
 from pathlib import Path
-from validator.core.files_explorer import FilesExplorer
+from validator.core.explorer import FilesExplorer
 
 
 class TestFilesExplorer:

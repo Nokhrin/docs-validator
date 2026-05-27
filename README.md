@@ -86,59 +86,111 @@ docs-validator scan ./docs --skip-external
 
 ---
 
+
 ## Разработка
-### Установка
-Установка docs-validator в проекте, требующем проверки связности ссылок
 
-1. Перейдите в каталог целевого проекта:
-   ```shell
-   cd ~/projects/notes_and_thoughts
-   ```
-2. Активируйте виртуальное окружение проекта:
-   ```shell
-   source .venv/bin/activate
-   ```
-3. Установите `docs-validator` в режиме editable из соседней директории:
-   ```shell
-   pip install -e ../docs-validator[dev]
-   ```
-   *Флаг `-e` создает символические ссылки на `src/validator`. Изменения кода применяются мгновенно без переустановки.*
-4. Запуск валидации с включенными проверками и детальным логом:
-   ```shell
-   docs-validator scan . --validate --log-level debug
-   ```
-5. Итерация разработки:
-   - Вносите правки в `../docs-validator/src/validator/`.
-   - Повторно выполняйте команду из шага 4. Перекомпиляция или `pip install` не требуются.
+### Установка в режиме editable
 
-### Тесты
-Запуск в терминале, с покрытием
+Для отладки и внесения изменений в код валидатора:
+
 ```shell
-pytest --cov=src/validator --cov-report=term
+# 1. Перейдите в каталог целевого проекта
+cd ~/projects/notes_and_thoughts
+
+# 2. Активируйте виртуальное окружение проекта
+source .venv/bin/activate
+
+# 3. Установите docs-validator в режиме editable из соседней директории
+pip install -e ../docs-validator[dev]
 ```
 
-### Обновление зависимостей - повторная установка
+> Флаг `-e` создает символические ссылки на `src/validator`. Изменения кода применяются мгновенно без переустановки.
 
-#### В корне `docs-validator`
-1. Активируйте виртуальное окружение:
+### Запуск валидации
+
+```shell
+docs-validator scan . --validate --log-level debug
+```
+
+### Итерация разработки
+
+1. Вносите правки в `../docs-validator/src/validator/`.
+2. Повторно выполняйте команду валидации. Перекомпиляция или `pip install` не требуются.
+
+### Запуск тестов
+
+```shell
+# С покрытием
+pytest --cov=src/validator --cov-report=term
+
+# Детальный вывод
+pytest tests/unit/ -vv --tb=short
+```
+
+### Обновление зависимостей
+
+#### В корне `docs-validator`:
+
 ```shell
 source .venv/bin/activate
-```
-2. Примените изменения `pyproject.toml`:
-```shell
 pip install -e ".[dev]"
 ```
 
-#### В тестируемом проекте (`notes_and_thoughts`)
-1. Активируйте окружение тестового проекта:
+#### В тестируемом проекте:
+
 ```shell
 cd ../notes_and_thoughts && source .venv/bin/activate
-```
-2. Обновите ссылку на локальную версию валидатора:
-```shell
 pip install -e ../docs-validator --upgrade
 ```
 
+---
+
+## Отладка в PyCharm
+
+### Предусловия
+
+- Проект `docs-validator` и тестируемый проект (например, `notes_and_thoughts`) клонированы в соседние директории.
+- В тестируемом проекте установлено виртуальное окружение с `docs-validator` в режиме editable.
+
+### Конфигурация запуска для отладки
+
+1. Создайте новую конфигурацию:
+   - `Run` -> `Edit Configurations...` -> `+` -> `Python`
+
+2. Заполните параметры:
+
+| Параметр              | Значение                                                  |
+|-----------------------|-----------------------------------------------------------|
+| Script path           | `path/to/docs-validator/src/validator/cli.py`             |
+| Module name           | *(оставьте пустым)*                                       |
+| Parameters            | `scan ../notes_and_thoughts --validate --log-level debug` |
+| Python interpreter    | Интерпретатор из `.venv` тестируемого проекта             |
+| Working directory     | `path/to/notes_and_thoughts`                              |
+| Environment variables | `PYTHONDONTWRITEBYTECODE=1;PYTHONUNBUFFERED=1`            |
+
+3. Точки останова:
+   - Установите брейкпоинты в `src/validator/validators/`, `src/validator/core/link_extractor.py` или других модулях.
+
+4. Запуск:
+   - Нажмите `Debug` (Shift+F9).
+
+### Конфигурация для запуска тестов
+
+1. Создайте конфигурацию:
+   - `Run` -> `Edit Configurations...` -> `+` -> `pytest`
+
+2. Параметры:
+
+| Параметр              | Значение                                              |
+|-----------------------|-------------------------------------------------------|
+| Name                  | `pytest unit tests`                                   |
+| Target                | `path/to/docs-validator/tests/unit/`                  |
+| Additional arguments  | `-vv --tb=short --color=yes -s --log-cli-level=DEBUG` |
+| Working directory     | `$ProjectFileDir$`                                    |
+| Environment variables | *(оставьте пустым)*                                   |
+
+
+---
 
 ### Технические нюансы и потенциальные ошибки
 
@@ -155,15 +207,15 @@ pip install -e ../docs-validator --upgrade
 ## Архитектура и возможности
 
 Инструмент реализует следующие ключевые функции:
-1.  **Сканирование файлов**: Рекурсивный обход каталогов, поддержка `.md` и `.markdown`.
-2.  **Построение графа связности**: Анализ внутренних ссылок для выявления структуры документации.
-3.  **Валидация**:
+1.  Сканирование файлов: Рекурсивный обход каталогов, поддержка `.md` и `.markdown`.
+2.  Построение графа связности: Анализ внутренних ссылок для выявления структуры документации.
+3.  Валидация:
     *   `BrokenLinkValidator`: Проверка существования целевых файлов.
     *   `OrphanFileValidator`: Поиск изолированных страниц.
     *   `AnchorLinkValidator`: Проверка корректности якорей разделов.
     *   `CircularDependencyValidator`: Обнаружение циклических зависимостей.
-4.  **Отчетность**: Генерация отчетов в форматах Markdown, HTML, JSON.
-5.  **Конфигурация**: Поддержка файла `.docs-validator.toml` с гибкими настройками исключений и поведения.
+4.  Отчетность: Генерация отчетов в форматах Markdown, HTML, JSON.
+5.  Конфигурация: Поддержка файла `.docs-validator.toml` с гибкими настройками исключений и поведения.
 
 [Подробнее об архитектуре](docs/architecture.md) | [Спецификация](docs/specification.md) | [Руководство разработчика](docs/development.md)
 

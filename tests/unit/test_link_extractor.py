@@ -1,7 +1,7 @@
 """Тесты для LinkExtractor."""
 from pathlib import Path
 
-from validator.core.link_extractor import LinkExtractor
+from validator.core.extractor import LinkExtractor
 from validator.core.models import LinkType
 
 

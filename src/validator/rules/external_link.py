@@ -8,7 +8,7 @@ import requests
 from requests import RequestException
 
 from validator.core.models import DocumentationFile, Link, ValidationIssue, IssueType, SeverityLevel
-from validator.validators import BaseValidator
+from validator.rules import BaseValidator
 
 log = logging.getLogger(__name__)
 
