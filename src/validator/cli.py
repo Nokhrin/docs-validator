@@ -1,14 +1,20 @@
 """
 CLI валидатора документации.
+
+Ответственность:
+- Парсинг sys.argv и приведение типов
+- Базовая валидация обязательных параметров
+- Вызов единой точки входа приложения
+- Преобразование результата в код выхода (sys.exit())
 """
 import argparse
 import logging
+import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
 from validator import setup_logging
-from validator.pipeline import load_configuration, explore_files, write_report, get_exit_code, \
-    aggregate_issue_statistics, generate_report, collect_issues, collect_links
+from validator.pipeline import load_configuration, run_validation
 
 log = logging.getLogger(__name__)
 
@@ -18,12 +24,6 @@ def create_parser() -> ArgumentParser:
     parser: ArgumentParser = ArgumentParser(
         prog='docs-validator',
         description='Static analyzer for documentation link integrity',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-    Examples:
-      docs-validator scan ./docs --report markdown
-      docs-validator scan ./docs --is_validate --fail-on-error
-    """,
     )
 
     subparsers = parser.add_subparsers(
@@ -37,13 +37,14 @@ def create_parser() -> ArgumentParser:
         name='scan',
         help='Scan documentation for broken links',
         description='Scans documentation directory for broken links, orphan files, and missing anchors.',
-        epilog="""
-    Examples:
-      %(prog)s scan ./docs
-      %(prog)s scan ./docs --report json --output report.json
-      %(prog)s scan ./docs --validate --fail-on-error
-      %(prog)s scan ./docs --exclude .git --exclude_patterns node_modules
-      """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Examples:
+  %(prog)s scan ./docs
+  %(prog)s scan ./docs --validate --report html --output report.html
+  %(prog)s scan ./docs --validate --fail-on-error --log-level debug
+  %(prog)s scan ./docs --skip-external --exclude node_modules --exclude .git
+  %(prog)s scan ./docs --config ./.my-config.toml
+""",
     )
 
     scan_parser.add_argument(
@@ -72,7 +73,7 @@ def create_parser() -> ArgumentParser:
         action='append',
         default=[],
         dest='exclude_patterns',
-        help='pattern to exlcude (can be specified multiple times)',
+        help='Pattern to exclude (can be specified multiple times)',
     )
 
     scan_parser.add_argument(
@@ -113,56 +114,29 @@ def create_parser() -> ArgumentParser:
 
 
 def execute_scan(args: argparse.Namespace) -> int:
-    if args.path_to_explore is None:
-        raise ValueError("Обязательный аргумент 'path_to_explore' не передан")
-    
     validation_config = load_configuration(args)
     setup_logging(validation_config.log_level.upper())
-
-    if not Path(args.path_to_explore).exists():
-        log.error('Не найдена запрошенная директория: %s', args.path_to_explore)
-        return 1
-
-    files_explored = explore_files(args.path_to_explore, validation_config)
-    if not files_explored:
-        log.debug('Файлы не найдены')
-        return 0
-
-    collect_links(files_explored)
-
-    issues = []
-    if validation_config.is_validate:
-        issues = collect_issues(files_explored, validation_config)
-
-    stats_issues = aggregate_issue_statistics(files_explored, issues)
-
-    report: str = generate_report(
-        {f.path: f for f in files_explored},
-        issues,
-        stats_issues,
-        validation_config,
-    )
+    exit_code, report_content = run_validation(validation_config)
 
     if validation_config.output_file:
-        write_report(report, Path(validation_config.output_file))
-    else:
-        write_report(report, None)
+        Path(validation_config.output_file).write_text(report_content, encoding='utf-8')
+    elif report_content:
+        sys.stdout.write(report_content + '\n')
 
-    return get_exit_code(issues, validation_config)
+    return exit_code
 
 
 def main() -> int:
-    """Точка входа cli."""
     parser = create_parser()
     args = parser.parse_args()
 
-    if args.command == 'scan':
-        return execute_scan(args)
-
-    return 0
+    match args.command:
+        case 'scan':
+            return execute_scan(args)
+        case _:
+            log.error('Неизвестная команда: %s', args.command)
+            return 2
 
 
 if __name__ == '__main__':
-    import sys
-
     sys.exit(main())
