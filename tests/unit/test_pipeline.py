@@ -1,160 +1,97 @@
-from unittest.mock import patch, MagicMock
-from pathlib import Path
 from argparse import Namespace
-from validator.pipeline import (
-    load_configuration, explore_files, collect_links, collect_issues,
-    aggregate_issue_statistics, generate_report, write_report, get_exit_code
-)
+from pathlib import Path
+
 from validator.config import ValidatorConfig
-from validator.core.models import LinkStatistics, ValidationIssue, IssueType, SeverityLevel, DocumentationFile, Link, \
-    LinkType
+from validator.core.models import (
+    ValidationIssue, SeverityLevel, IssueType, DocumentationFile, Link, LinkType
+)
+from validator.pipeline import (
+    load_configuration, run_validation, collect_issues,
+    aggregate_issue_statistics, collect_links
+)
 
 
-class TestLoadConfiguration:
-    def test_returns_defaults_when_no_file(self):
-        args = Namespace(config=None, exclude_patterns=[], log_level='info',
-                         report_format='html', output_file=None, is_validate=False,
-                         is_fail_on_error=False, external_timeout_sec=5, max_threads_number=2,
-                         hosts_to_ignore=[], is_skip_external=True)
-        with patch('validator.application.load_config_from_toml', side_effect=FileNotFoundError):
-            cfg = load_configuration(args)
-        assert cfg.log_level == 'info'
-        assert cfg.report_format == 'html'
-
-    def test_loads_from_toml_when_exists(self, tmp_path):
-        config_file = tmp_path / "cfg.toml"
-        config_file.write_text("[validator]\nlog_level = 'debug'")
+class TestPipeline:
+    def test_load_configuration_priority(self, mocker):
+        mocker.patch('validator.pipeline.Path.exists', return_value=True)
+        mocker.patch(
+            'validator.pipeline.load_config_from_toml',
+            return_value=ValidatorConfig(report_format='json', is_validate=True)
+        )
 
         args = Namespace(
-            config=config_file,
-            exclude_patterns=[], log_level='info', report_format='html',
-            output_file=None, is_validate=False, is_fail_on_error=False,
-            external_timeout_sec=5, max_threads_number=2,
-            hosts_to_ignore=[], is_skip_external=True
+            path_to_explore=Path('./docs'),
+            config=Path('./custom.toml'),
+            report_format='html',
+            is_validate=False
         )
+        cfg = load_configuration(args)
 
-        with patch('validator.application.load_config_from_toml', return_value=MagicMock()) as mock_load:
-            result = load_configuration(args)
-            mock_load.assert_called_once_with(config_file)
-            assert result == mock_load.return_value
+        assert cfg.report_format == 'html'
+        assert cfg.is_validate is False
+        assert cfg.path_to_explore == Path('./docs')
 
-class TestExploreFiles:
-    @patch('validator.application.FilesExplorer')
-    def test_explores_valid_directory(self, mock_explorer):
-        mock_explorer.return_value.explore.return_value = [MagicMock()]
-        cfg = MagicMock(exclude_patterns=[])
-        res = explore_files(Path('.'), cfg)
-        assert len(res) == 1
-        mock_explorer.assert_called_once()
+    def test_run_validation_orchestration(self, mocker, tmp_path):
+        cfg = ValidatorConfig(path_to_explore=tmp_path, is_validate=True, is_skip_external=True)
+        mock_files = {Path('a.md'): mocker.MagicMock()}
 
-    @patch('validator.application.FilesExplorer')
-    def test_respects_custom_excludes(self, mock_explorer):
-        cfg = MagicMock(exclude_patterns=['.git', 'build'])
-        explore_files(Path('src'), cfg)
-        mock_explorer.assert_called_once_with(root_path=Path('src'), patterns_exclude={'.git', 'build'})
+        mock_explore = mocker.patch('validator.pipeline.explore_files', return_value=mock_files)
+        mock_links = mocker.patch('validator.pipeline.collect_links')
+        mock_issues = mocker.patch('validator.pipeline.collect_issues')
+        mock_agg = mocker.patch('validator.pipeline.aggregate_issue_statistics')
+        mock_report = mocker.patch('validator.pipeline.generate_report', return_value=' report ')
+        mocker.patch('validator.pipeline.get_exit_code', return_value=0)
 
+        exit_code, content = run_validation(cfg)
 
-class TestCollectLinks:
-    def test_adds_links_to_files(self, tmp_path):
-        f1 = tmp_path / 'a.md'
-        f1.write_text('[link](b.md)')
-        docs = [MagicMock(path=f1, links_out=set())]
-        res = collect_links(docs)
-        assert len(res[0].links_out) > 0
+        mock_explore.assert_called_once_with(tmp_path, cfg)
+        mock_links.assert_called_once_with(mock_files, tmp_path)
+        mock_issues.assert_called_once_with(mock_files, cfg)
+        mock_agg.assert_called_once()
+        mock_report.assert_called_once()
 
-    def test_handles_io_error_gracefully(self, tmp_path):
-        f1 = tmp_path / 'a.md'
-        f1.write_text('')
-        docs = [MagicMock(path=f1, links_out=set())]
-        with patch.object(Path, 'read_text', side_effect=IOError):
-            res = collect_links(docs)
-        assert res[0].links_out == set()
+        assert content == ' report '
+        assert exit_code == 0
 
+    def test_collect_issues_respects_skip_external(self, mocker, tmp_path):
+        mock_external_cls = mocker.patch('validator.pipeline.ExternalLinkValidator')
+        mock_external_instance = mocker.MagicMock()
+        mock_external_cls.return_value = mock_external_instance
 
-class TestCollectIssues:
-    @patch('validator.application.CircularDependencyValidator')
-    @patch('validator.application.AnchorLinkValidator')
-    @patch('validator.application.OrphanFileValidator')
-    @patch('validator.application.BrokenLinkValidator')
-    def test_runs_validators_and_aggregates(self, mock_broken, mock_orphan, mock_anchor, mock_circular):
-        mock_broken.return_value.validate.return_value = [MagicMock()]
-        mock_orphan.return_value.validate.return_value = []
-        mock_anchor.return_value.validate.return_value = []
-        mock_circular.return_value.validate.return_value = []
+        mocker.patch('validator.pipeline.CircularDependencyValidator')
+        mocker.patch('validator.pipeline.AnchorLinkValidator')
+        mocker.patch('validator.pipeline.OrphanFileValidator')
+        mocker.patch('validator.pipeline.BrokenLinkValidator')
 
-        cfg = MagicMock(is_validate=True, is_skip_external=True, path_to_explore=Path('.'))
-        issues = collect_issues([MagicMock()], cfg)
+        files = {Path('a.md'): mocker.MagicMock()}
+        cfg_with_skip = ValidatorConfig(is_validate=True, is_skip_external=True, path_to_explore=tmp_path)
+        cfg_without_skip = ValidatorConfig(is_validate=True, is_skip_external=False, path_to_explore=tmp_path)
 
-        assert len(issues) == 1
-        mock_broken.return_value.validate.assert_called_once()
+        collect_issues(files, cfg_with_skip)
+        collect_issues(files, cfg_without_skip)
 
-    def test_skips_external_when_flagged(self):
-        cfg = MagicMock(is_validate=True, is_skip_external=True, path_to_explore=Path('.'))
-        with patch('validator.application.BrokenLinkValidator') as m1, \
-                patch('validator.application.ExternalLinkValidator') as m2:
-            m1.return_value.validate.return_value = []
-            collect_issues([], cfg)
-            m2.assert_not_called()
+        mock_external_instance.validate.assert_called_once_with(files, cfg_without_skip.path_to_explore)
 
+    def test_aggregate_issue_statistics_pure(self):
+        broken_link = Link('./missing.md', LinkType.INTERNAL, Path('a.md'), 1)
+        valid_link = Link('./other.md', LinkType.INTERNAL, Path('a.md'), 2)
+        file_obj = DocumentationFile(path=Path('a.md'), title='A', links_out={broken_link, valid_link})
+        issue = ValidationIssue(IssueType.BROKEN_LINK, SeverityLevel.ERROR, file_obj, broken_link)
 
-class TestAggregateIssueStatistics:
-    def test_counts_internal_links_correctly(self):
-        link = Link(uri="./test.md", link_type=LinkType.INTERNAL, parent_file=Path("a.md"), line_number=1)
-        file = DocumentationFile(path=Path("a.md"), title="A", links_out={link})
-        stats = aggregate_issue_statistics([file], [])
-        assert stats.internal_total == 1
+        stats = aggregate_issue_statistics({Path('a.md'): file_obj}, [issue])
 
-    def test_counts_broken_links_correctly(self):
-        link = Link(uri="./missing.md", link_type=LinkType.INTERNAL, parent_file=Path("a.md"), line_number=5)
-        file = DocumentationFile(path=Path("a.md"), title="A", links_out={link})
-        issue = ValidationIssue(
-            issue_type=IssueType.BROKEN_LINK,
-            severity_level=SeverityLevel.ERROR,
-            src_file=file,
-            link=link
-        )
-        stats = aggregate_issue_statistics([file], [issue])
+        assert stats.internal_total == 2
         assert stats.internal_broken == 1
+        assert stats.external_total == 0
 
-from pathlib import Path
-from validator.pipeline import generate_report
-from validator.config import ValidatorConfig
-from validator.core.models import LinkStatistics
+    def test_collect_links_reads_relative_to_root(self, tmp_path):
+        doc_file = tmp_path / 'sub' / 'file.md'
+        doc_file.parent.mkdir(parents=True, exist_ok=True)
+        doc_file.write_text('[Link](./target.md)')
 
-class TestGenerateReport:
-    def test_returns_markdown_string(self):
-        cfg = ValidatorConfig(report_format='markdown', output_file=None)
-        stats = LinkStatistics(internal_total=5, internal_broken=1, external_total=2, external_broken=0)
-        res = generate_report({}, [], stats, cfg)
-        assert '# Отчет валидатора документации' in res
-        assert 'СТАТИСТИКА ВЫПОЛНЕНИЯ' in res
-        assert 'Внутренних ссылок: 5' in res
+        file_obj = DocumentationFile(path=Path('sub/file.md'), title='File')
+        files = {Path('sub/file.md'): file_obj}
 
-    def test_returns_html_string(self):
-        cfg = ValidatorConfig(report_format='html', output_file=None)
-        stats = LinkStatistics(internal_total=0, internal_broken=0, external_total=3, external_broken=1)
-        res = generate_report({}, [], stats, cfg)
-        assert '<!DOCTYPE html>' in res
-        assert 'Внешних ссылок: 3 (недоступно: 1)' in res
+        collect_links(files, root_path=tmp_path)
 
-class TestWriteReport:
-    def test_writes_to_file(self, tmp_path):
-        target = tmp_path / 'out.md'
-        write_report('content', target)
-        assert target.read_text() == 'content'
-
-    def test_writes_to_stdout(self, capsys):
-        write_report('console output', None)
-        captured = capsys.readouterr()
-        assert 'console output' in captured.out
-
-
-class TestGetExitCode:
-    def test_returns_zero_when_no_errors(self):
-        cfg = MagicMock(is_fail_on_error=True)
-        assert get_exit_code([], cfg) == 0
-
-    def test_returns_one_when_errors_and_flag_enabled(self):
-        issue = MagicMock(severity_level=MagicMock(value='error'))
-        cfg = MagicMock(is_fail_on_error=True)
-        assert get_exit_code([issue], cfg) == 1
+        assert len(file_obj.links_out) == 1

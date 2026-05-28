@@ -14,7 +14,7 @@ class TestFilesExplorer:
 
         explorer = FilesExplorer(temp_docs_dir)
 
-        files = list(explorer.explore())
+        files = list(explorer.find_files())
 
         assert len(files) == 2
         paths = {f.path for f in files}
@@ -49,7 +49,7 @@ def test_custom_directory_exclusion(temp_docs_dir: Path):
         patterns_exclude={'custom_ignore'}
     )
 
-    files = list(explorer.explore())
+    files = list(explorer.find_files())
     found_paths = {f.path.name for f in files}
 
     assert len(files) == 2
