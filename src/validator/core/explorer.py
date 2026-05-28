@@ -76,7 +76,7 @@ class FilesExplorer:
                 if not self._is_excluded(file_name):
                     yield root / file_name
 
-    def explore(self) -> Iterator[DocumentationFile]:
+    def find_files(self) -> Iterator[DocumentationFile]:
         """Возвращает генератор файлов требующих проверки."""
         for file_path in self._walk_skip_ignored():
             if file_path.suffix.lower() in self.extensions_include:

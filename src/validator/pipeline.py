@@ -9,7 +9,7 @@ from typing import Callable, Iterator, TextIO
 from validator.config import ValidatorConfig, load_config_from_toml, merge_config
 from validator.core.explorer import FilesExplorer
 from validator.core.extractor import LinkExtractor
-from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, LinkType, Link
+from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, LinkType, Link, SeverityLevel
 from validator.reporters import JSONReporter, MarkdownReporter, HTMLReporter
 from validator.rules import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
     CircularDependencyValidator, ExternalLinkValidator, BaseValidator
@@ -36,52 +36,53 @@ def load_configuration(args: Namespace) -> ValidatorConfig:
     return replace(config, **cli_updates)
 
 
-def explore_files(path_to_explore: Path, config: ValidatorConfig) -> list[DocumentationFile]:
+def explore_files(path_to_explore: Path, config: ValidatorConfig) -> dict[Path, DocumentationFile]:
     """Извлекает метаданные из файлов в директории.
 
     Рекурсивно от root
     """
-
     if not path_to_explore.exists():
         log.error('Не удалось найти запрошенный путь: %s', path_to_explore)
-
+        return {}
     if not path_to_explore.is_dir():
         log.error('Запрошенный путь не является каталогом: %s', path_to_explore)
-
-    log.debug('Выполняется обход каталога %s', path_to_explore)
+        return {}
 
     explorer = FilesExplorer(
         root_path=path_to_explore,
         patterns_exclude=set(config.exclude_patterns)
     )
 
-    return list(explorer.explore())
+    return {f.path: f for f in explorer.find_files()}
 
 
-def collect_links(files: list[DocumentationFile]) -> list[DocumentationFile]:
+def collect_links(files: dict[Path, DocumentationFile], root_path: Path) -> dict[Path, DocumentationFile]:
     """Записывает информацию о ссылках файла.
+
+    Args:
+        files: Словарь файлов (ключи - относительные пути).
+        root_path: Абсолютный или относительный путь к корню сканирования для резолва путей.
 
     Результат в поле DocumentationFile.out_links
     Возвращает новый экземпляр списка
     """
-    for file in files:
+    for file_path, file_obj in files.items():
         try:
-            content = file.path.read_text(encoding='utf-8')
-            extractor = LinkExtractor(file.path)
-            file.links_out = set(extractor.get_links_from_file(content))
+            full_path = root_path / file_path
+            file_content = full_path.read_text(encoding='utf-8')
+            file_obj.links_out=set(LinkExtractor(file_obj.path).get_links_from_file(file_content))
         except IOError as err:
-            log.error('При чтении файла %s произошла ошибка: %s', file.path, err)
-            file.links_out = set()
+            log.error('Не удалось прочитать %s: %s', file_obj.path, err)
+            file_obj.links_out = set()
     return files
 
 
-def collect_issues(files: list[DocumentationFile], config: ValidatorConfig) -> list[ValidationIssue]:
+def collect_issues(files: dict[Path, DocumentationFile], config: ValidatorConfig) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     if config.is_validate:
         if config.path_to_explore is None:
-            raise ValueError("Не задан path_to_explore. Валидация невозможна.")
+            raise ValueError("Не задан path_to_explore. Валидация отменена.")
 
-        files_to_validate = {file.path: file for file in files}
         validators: list[BaseValidator] = [
             BrokenLinkValidator(), OrphanFileValidator(), AnchorLinkValidator(), CircularDependencyValidator()
         ]
@@ -93,23 +94,23 @@ def collect_issues(files: list[DocumentationFile], config: ValidatorConfig) -> l
             ))
 
         for validator in validators:
-            new_issues = validator.validate(files_to_validate, config.path_to_explore)
+            new_issues = validator.validate(files, config.path_to_explore)
             issues.extend(new_issues)
     return issues
 
 
 def aggregate_issue_statistics(
-        files: list[DocumentationFile],
+        files: dict[Path, DocumentationFile],
         issues: list[ValidationIssue],
 ) -> LinkStatistics:
     """Возвращает статистику валидации ссылок."""
-    broken_links: set[Link] = {i.link for i in issues if i.link}
+    broken_links: set[Link] = {i.link for i in issues if i.link is not None}
     internal_total = 0
     internal_broken = 0
     external_total = 0
     external_broken = 0
 
-    for file in files:
+    for file in files.values():
         for link in file.links_out:
             if link.link_type is LinkType.INTERNAL:
                 internal_total += 1
@@ -128,40 +129,55 @@ def aggregate_issue_statistics(
     )
 
 
-def generate_report(files: dict[Path, DocumentationFile], issues: list[ValidationIssue], stats: LinkStatistics, config: ValidatorConfig) -> str:
-    reporters: dict[str, Callable[[dict, list, LinkStatistics], str]] = {
+def generate_summary(
+        files: dict[Path, DocumentationFile],
+        issues: list[ValidationIssue],
+        stats: LinkStatistics,
+) -> str:
+    files_total = len(files)
+    links_total = sum(len(f.links_out) for f in files.values())
+
+    error_count = sum(1 for i in issues if i.severity_level == SeverityLevel.ERROR)
+    warning_count = sum(1 for i in issues if i.severity_level == SeverityLevel.WARNING)
+
+    lines = [
+        '=' * 40,
+        'СТАТИСТИКА ВЫПОЛНЕНИЯ',
+        '=' * 40,
+        f'Обработано файлов: {files_total}',
+        f'Обнаружено ссылок: {links_total}',
+        f'Внутренних ссылок: {stats.internal_total}',
+        f'Внешних ссылок: {stats.external_total} (недоступно: {stats.external_broken})',
+    ]
+
+    if issues:
+        parts = []
+        if error_count:
+            parts.append(f'ошибок: {error_count}')
+        if warning_count:
+            parts.append(f'предупреждений: {warning_count}')
+        detail = f' ({', '.join(parts)})' if parts else ''
+        lines.append(f'Найдено проблем: {len(issues)}{detail}')
+    else:
+        lines.append('Проблем не обнаружено.')
+
+    lines.append('=' * 40)
+    return '\n'.join(lines)
+
+def generate_report(
+        files: dict[Path, DocumentationFile],
+        issues: list[ValidationIssue],
+        stats: LinkStatistics,
+        config: ValidatorConfig,
+) -> str:
+    reporters: dict[str, Callable[[dict[Path, DocumentationFile], list[ValidationIssue], LinkStatistics], str]] = {
         'json': lambda f, i, s: JSONReporter().report(f, i, s),
         'markdown': lambda f, i, s: MarkdownReporter().report(f, i, s),
         'html': lambda f, i, s: HTMLReporter().report(f, i, s),
     }
     make_report = reporters.get(config.report_format, reporters['markdown'])
 
-    try:
-        report = make_report(files, issues, stats)
-    except Exception as err:
-        log.error('Ошибка при генерации отчета: %s', err)
-        raise RuntimeError(err) from err
-
-    if config.output_file:
-        Path(config.output_file).write_text(report, encoding='utf-8')
-
-    files_total = len(files)
-    links_total = sum(len(f.links_out) for f in files.values())
-    summary_lines = [
-        "=" * 40, "СТАТИСТИКА ВЫПОЛНЕНИЯ", "=" * 40,
-        f"Обработано файлов: {files_total}",
-        f"Обнаружено ссылок: {links_total}",
-        f"Внутренних ссылок: {stats.internal_total}",
-        f"Внешних ссылок: {stats.external_total} (недоступно: {stats.external_broken})",
-    ]
-    if issues:
-        error_count = sum(1 for i in issues if i.severity_level.value == 'error')
-        summary_lines.append(f"Найдено проблем: {len(issues)} (из них ошибок: {error_count})")
-    else:
-        summary_lines.append("Проблем не обнаружено.")
-    summary_lines.append("=" * 40)
-
-    return f"{report}\n\n{'\n'.join(summary_lines)}"
+    return make_report(files, issues, stats)
 
 def write_report(report_content: str, output_path: Path | None) -> None:
     with open_output(output_path) as out_stream:
@@ -186,3 +202,23 @@ def get_exit_code(
     if config.is_fail_on_error and any(i.severity_level.value == 'error' for i in issues):
         return 1
     return 0
+
+def run_validation(config: ValidatorConfig) -> tuple[int,str]:
+    if config.path_to_explore is None:
+        log.error('Не указана директория для сканирования')
+        return 1, ''
+    path_to_explore = Path(config.path_to_explore)
+    if not path_to_explore.exists():
+        log.error('Директория не найдена: %s', path_to_explore)
+        return 1, ''
+
+    files = explore_files(path_to_explore, config)
+    if not files:
+        return 0, ''
+
+    collect_links(files, path_to_explore)
+    issues=collect_issues(files,config) if config.is_validate else []
+    stats=aggregate_issue_statistics(files,issues)
+    report_content = generate_report(files, issues, stats, config)
+
+    return get_exit_code(issues, config), report_content

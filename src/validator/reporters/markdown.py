@@ -19,13 +19,6 @@ class MarkdownReporter(BaseReporter):
         report_lines = [
             '# Отчет валидатора документации',
             '',
-            '## Сводка',
-            '',
-            f'**Всего файлов:** {len(files)}',
-            f'**Всего проблем:** {len(issues)}',
-            f'**Внутренних ссылок:** {link_stat.internal_total} (битых: {link_stat.internal_broken})',
-            f'**Внешних ссылок:** {link_stat.external_total} (битых: {link_stat.external_broken})',
-            '',
         ]
 
         # issues
@@ -51,6 +44,18 @@ class MarkdownReporter(BaseReporter):
             '',
         ])
         for file in sorted(files.values(), key=lambda f: f.path):
-            report_lines.append(f'- `{file.path}` — {file.title}')
+            report_lines.append(f'- `{file.path}` - {file.title}')
+
+        # total
+        report_lines.extend([
+            '',
+            '## Сводка',
+            '',
+            f'**Всего файлов:** {len(files)}',
+            f'**Всего проблем:** {len(issues)}',
+            f'**Внутренних ссылок:** {link_stat.internal_total} (битых: {link_stat.internal_broken})',
+            f'**Внешних ссылок:** {link_stat.external_total} (битых: {link_stat.external_broken})',
+            '',
+        ])
 
         return '\n'.join(report_lines)
