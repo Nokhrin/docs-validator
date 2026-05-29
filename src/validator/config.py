@@ -36,10 +36,10 @@ def load_config_from_toml(config_file: Path) -> ValidatorConfig:
             config_content= load(f)
     except TOMLDecodeError as err:
         log.error('Ошибка синтаксиса TOML в файле %s: %s', config_file, err)
-        raise
+        return ValidatorConfig()
     except IOError as err:
         log.error('Не удалось прочитать файл конфигурации %s: %s', config_file, err)
-        raise
+        return ValidatorConfig()
 
     validator_parameters = config_content.get('validator', {})
 

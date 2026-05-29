@@ -20,8 +20,9 @@ class BrokenLinkValidator(BaseValidator):
                 if not link.is_internal or link.target_file is None:
                     continue
 
-                target_path = root_dir / link.target_file
-                if target_path is not None and not target_path.exists():
+                source_abs = root_dir / link.parent_file
+                target_path = (source_abs.parent / link.target_file).resolve()
+                if not target_path.exists():
                     log.debug(f'Не найден адресуемый файл: {link.target_file} по ссылке {link}',)
                     issues.append(ValidationIssue(
                         issue_type=IssueType.BROKEN_LINK,

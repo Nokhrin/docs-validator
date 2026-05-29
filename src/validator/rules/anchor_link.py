@@ -59,7 +59,8 @@ class AnchorLinkValidator(BaseValidator):
             for link in file.links_out:
                 log.debug('Проверка внутренних ссылок с якорями')
                 if link.anchor and link.is_internal and link.target_file:
-                    target_path = root_dir / link.target_file
+                    source_abs = root_dir / link.parent_file
+                    target_path = (source_abs.parent / link.target_file).resolve()
 
                     if not target_path.exists():
                         log.debug('Целевой файл %s не найден, ошибка другого типа: %s', target_path, link)
