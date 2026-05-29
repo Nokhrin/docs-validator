@@ -13,7 +13,6 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
-from validator import setup_logging
 from validator.pipeline import load_configuration, run_validation
 
 log = logging.getLogger(__name__)
@@ -115,7 +114,16 @@ def create_parser() -> ArgumentParser:
 
 def execute_scan(args: argparse.Namespace) -> int:
     validation_config = load_configuration(args)
-    setup_logging(validation_config.log_level.upper())
+
+    log_level = getattr(logging, validation_config.log_level.upper(), logging.WARNING)
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+        datefmt='%H:%M:%S',
+        stream=sys.stdout,
+        force=True
+    )
+
     exit_code, report_content = run_validation(validation_config)
 
     if validation_config.output_file:

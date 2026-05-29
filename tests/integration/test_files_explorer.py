@@ -6,13 +6,13 @@ from validator.core.explorer import FilesExplorer
 class TestFilesExplorer:
     """Тестирование рекурсивного поиска файлов."""
 
-    def test_explore_finds_markdown_files(self, temp_docs_dir):
+    def test_explore_finds_markdown_files(self, tmp_path: Path):
         """Сканер находит файлы с расширениями .md и .markdown."""
-        (temp_docs_dir / "README.md").write_text("# Root")
-        (temp_docs_dir / "guide.markdown").write_text("# Guide")
-        (temp_docs_dir / "notes.txt").write_text("Should be ignored")
+        (tmp_path / "README.md").write_text("# Root")
+        (tmp_path / "guide.markdown").write_text("# Guide")
+        (tmp_path / "notes.txt").write_text("Should be ignored")
 
-        explorer = FilesExplorer(temp_docs_dir)
+        explorer = FilesExplorer(tmp_path)
 
         files = list(explorer.find_files())
 
@@ -22,11 +22,11 @@ class TestFilesExplorer:
         assert Path("guide.markdown") in paths
 
 
-def test_custom_directory_exclusion(temp_docs_dir: Path):
+def test_custom_directory_exclusion(tmp_path: Path):
     """Проверка исключения пользовательского каталога через patterns_exclude.
     
     Структура тестового каталога:
-    temp_docs_dir/
+    tmp_path/
       ├── doc.md (должен быть найден)
       ├── custom_ignore/
       │   └── ignored.md (должен быть ИСКЛЮЧЕН)
@@ -34,18 +34,18 @@ def test_custom_directory_exclusion(temp_docs_dir: Path):
           └── found.md (должен быть найден)
     """
 
-    (temp_docs_dir / 'doc.md').write_text('# Doc')
+    (tmp_path / 'doc.md').write_text('# Doc')
 
-    custom_dir = temp_docs_dir / 'custom_ignore'
+    custom_dir = tmp_path / 'custom_ignore'
     custom_dir.mkdir()
     (custom_dir / 'ignored.md').write_text('# Ignored')
 
-    normal_dir = temp_docs_dir / 'normal_dir'
+    normal_dir = tmp_path / 'normal_dir'
     normal_dir.mkdir()
     (normal_dir / 'found.md').write_text('# Found')
 
     explorer = FilesExplorer(
-        root_path=temp_docs_dir,
+        root_path=tmp_path,
         patterns_exclude={'custom_ignore'}
     )
 

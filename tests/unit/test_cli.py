@@ -8,7 +8,6 @@ from validator.cli import create_parser, execute_scan, main
 class TestCli:
     def test_execute_scan_delegates_and_handles_output(self, mocker):
         mock_load = mocker.patch('validator.cli.load_configuration')
-        mock_setup = mocker.patch('validator.cli.setup_logging')
         mock_run = mocker.patch('validator.cli.run_validation')
         mock_write = mocker.patch('validator.cli.Path.write_text')
 
@@ -19,7 +18,6 @@ class TestCli:
         ret = execute_scan(Namespace(path_to_explore='/tmp/docs'))
 
         mock_load.assert_called_once()
-        mock_setup.assert_called_once_with('WARNING')
         mock_run.assert_called_once_with(mock_config)
         mock_write.assert_called_once_with('mock_report', encoding='utf-8')
         assert ret == 0

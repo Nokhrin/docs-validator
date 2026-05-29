@@ -179,11 +179,11 @@ def generate_report(
 
     return make_report(files, issues, stats)
 
-def write_report(report_content: str, output_path: Path | None) -> None:
-    with open_output(output_path) as out_stream:
-        out_stream.write(report_content)
-        if output_path is None:
-            out_stream.write('\n')
+def write_report(report_content: str, stream: TextIO = sys.stdout, output_path: Path | None = None) -> None:
+    if output_path:
+        output_path.write_text(report_content, encoding='utf-8')
+    else:
+        stream.write(report_content + '\n')
 
 
 @contextmanager

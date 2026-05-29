@@ -19,7 +19,7 @@ class TestConfig:
         assert config.hosts_to_ignore == []
         assert config.is_skip_external == False
 
-    def test_load_config_from_toml(self, config_toml, temp_docs_dir):
+    def test_load_config_from_toml(self, config_toml, tmp_path: Path):
         """Конфигурация корректна, все параметры указаны в файле."""
         config = load_config_from_toml(config_toml)
 
