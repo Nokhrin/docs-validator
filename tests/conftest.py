@@ -12,14 +12,6 @@ from validator.core.models import DocumentationFile, Link, LinkType
 
 
 @pytest.fixture
-def temp_docs_dir():
-    """Создает временную директорию с тестовыми .md-файлами."""
-    with TemporaryDirectory() as tmpdir:
-        root = Path(tmpdir)
-        yield root
-
-
-@pytest.fixture
 def parser():
     """Фикстура: парсер аргументов."""
     return create_parser()
@@ -37,9 +29,9 @@ def graph():
 
 
 @pytest.fixture
-def root_md_file(temp_docs_dir) -> dict[Path, DocumentationFile]:
+def root_md_file(tmp_path: Path) -> dict[Path, DocumentationFile]:
     """Создает один тестовый .md-файл с содержимым."""
-    file_path = temp_docs_dir / "README.md"
+    file_path = tmp_path / "README.md"
     file_path.write_text(
         "# README Test Document\n\n"
         "[Internal link](./other.md)\n"
@@ -60,9 +52,9 @@ def root_md_file(temp_docs_dir) -> dict[Path, DocumentationFile]:
 
 
 @pytest.fixture
-def two_files_valid_link_with_anchor(temp_docs_dir) -> dict[Path, DocumentationFile]:
-    (temp_docs_dir / "README.md").write_text("[VALID-LINK-WITH-ANCHOR](./guide.md#anchor-link)")
-    (temp_docs_dir / "guide.md").write_text("# Guide\nline1\nline2\n### anchor-link\nline3")
+def two_files_valid_link_with_anchor(tmp_path: Path) -> dict[Path, DocumentationFile]:
+    (tmp_path / "README.md").write_text("[VALID-LINK-WITH-ANCHOR](./guide.md#anchor-link)")
+    (tmp_path / "guide.md").write_text("# Guide\nline1\nline2\n### anchor-link\nline3")
     return {
         Path("README.md"): DocumentationFile(
             path=Path("README.md"),
@@ -79,9 +71,9 @@ def two_files_valid_link_with_anchor(temp_docs_dir) -> dict[Path, DocumentationF
 
 
 @pytest.fixture
-def two_files_valid_link_no_anchor(temp_docs_dir) -> dict[Path, DocumentationFile]:
-    (temp_docs_dir / "README.md").write_text("[VALID-LINK-NO-ANCHOR](./guide.md)")
-    (temp_docs_dir / "guide.md").write_text("# Guide")
+def two_files_valid_link_no_anchor(tmp_path: Path) -> dict[Path, DocumentationFile]:
+    (tmp_path / "README.md").write_text("[VALID-LINK-NO-ANCHOR](./guide.md)")
+    (tmp_path / "guide.md").write_text("# Guide")
     return {
         Path("README.md"): DocumentationFile(
             path=Path("README.md"),
@@ -98,19 +90,19 @@ def two_files_valid_link_no_anchor(temp_docs_dir) -> dict[Path, DocumentationFil
 
 
 @pytest.fixture
-def one_root_one_orphan(temp_docs_dir) -> dict[Path, DocumentationFile]:
-    (temp_docs_dir / "README.md").write_text("# Root")
-    (temp_docs_dir / "orphan.md").write_text("# Orphan")
+def one_root_one_orphan(tmp_path: Path) -> dict[Path, DocumentationFile]:
+    (tmp_path / "README.md").write_text("# Root")
+    (tmp_path / "orphan.md").write_text("# Orphan")
     return {
         Path("README.md"): DocumentationFile(path=Path("README.md"), title="Root"),
         Path("orphan.md"): DocumentationFile(path=Path("orphan.md"), title="Orphan"),
     }
 
 @pytest.fixture
-def one_root_two_orphans(temp_docs_dir) -> dict[Path, DocumentationFile]:
-    (temp_docs_dir / 'README.md').write_text('# Root')
-    (temp_docs_dir / 'orphan1.md').write_text('# Orphan 1')
-    (temp_docs_dir / 'orphan2.md').write_text('# Orphan 2')
+def one_root_two_orphans(tmp_path: Path) -> dict[Path, DocumentationFile]:
+    (tmp_path / 'README.md').write_text('# Root')
+    (tmp_path / 'orphan1.md').write_text('# Orphan 1')
+    (tmp_path / 'orphan2.md').write_text('# Orphan 2')
     return {
         Path('README.md'): DocumentationFile(path=Path('README.md'), title='Root'),
         Path('orphan1.md'): DocumentationFile(path=Path('orphan1.md'), title='Orphan 1'),
@@ -119,8 +111,8 @@ def one_root_two_orphans(temp_docs_dir) -> dict[Path, DocumentationFile]:
 
 
 @pytest.fixture
-def one_file_one_broken_link(temp_docs_dir) -> dict[Path, DocumentationFile]:
-    (temp_docs_dir / "README.md").write_text("[BROKEN-LINK](./missing.md)")
+def one_file_one_broken_link(tmp_path: Path) -> dict[Path, DocumentationFile]:
+    (tmp_path / "README.md").write_text("[BROKEN-LINK](./missing.md)")
     return {
         Path("README.md"): DocumentationFile(
             path=Path("README.md"),
@@ -135,8 +127,8 @@ def one_file_one_broken_link(temp_docs_dir) -> dict[Path, DocumentationFile]:
     }
 
 @pytest.fixture
-def one_file_multiple_broken_links(temp_docs_dir) -> dict[Path, DocumentationFile]:
-    (temp_docs_dir / "README.md").write_text(
+def one_file_multiple_broken_links(tmp_path: Path) -> dict[Path, DocumentationFile]:
+    (tmp_path / "README.md").write_text(
         "[Link1](./missing1.md)\n[Link2](./missing2.md)"
     )
     return {
@@ -151,9 +143,9 @@ def one_file_multiple_broken_links(temp_docs_dir) -> dict[Path, DocumentationFil
     }
 
 @pytest.fixture
-def one_file_broken_anchor(temp_docs_dir) -> dict[Path, DocumentationFile]:
-    (temp_docs_dir / 'README.md').write_text('[BROKEN-LINK](./missing.md)')
-    (temp_docs_dir / 'guide.md').write_text('# Guide')
+def one_file_broken_anchor(tmp_path: Path) -> dict[Path, DocumentationFile]:
+    (tmp_path / 'README.md').write_text('[BROKEN-LINK](./missing.md)')
+    (tmp_path / 'guide.md').write_text('# Guide')
     return {
         Path('README.md'): DocumentationFile(
             path=Path('README.md'),
@@ -170,10 +162,10 @@ def one_file_broken_anchor(temp_docs_dir) -> dict[Path, DocumentationFile]:
 
 
 @pytest.fixture
-def three_files_no_cycles(temp_docs_dir) -> dict[Path, DocumentationFile]:
-    (temp_docs_dir / 'a.md').write_text('[Link](./b.md)')
-    (temp_docs_dir / 'b.md').write_text('[Link](./c.md)')
-    (temp_docs_dir / 'c.md').write_text('# End')
+def three_files_no_cycles(tmp_path: Path) -> dict[Path, DocumentationFile]:
+    (tmp_path / 'a.md').write_text('[Link](./b.md)')
+    (tmp_path / 'b.md').write_text('[Link](./c.md)')
+    (tmp_path / 'c.md').write_text('# End')
     return {
             Path('a.md'): DocumentationFile(
                 path=Path('a.md'), title='A', links_out={
@@ -189,10 +181,10 @@ def three_files_no_cycles(temp_docs_dir) -> dict[Path, DocumentationFile]:
         }
 
 @pytest.fixture
-def two_files_circular_dep(temp_docs_dir):
+def two_files_circular_dep(tmp_path: Path):
     """Создаёт тестовые данные с циклическими зависимостями."""
-    (temp_docs_dir / 'a.md').write_text('[Link](./b.md)')
-    (temp_docs_dir / 'b.md').write_text('[Link](./a.md)')
+    (tmp_path / 'a.md').write_text('[Link](./b.md)')
+    (tmp_path / 'b.md').write_text('[Link](./a.md)')
     return  {
             Path('a.md'): DocumentationFile(
                 path=Path('a.md'), title='A', links_out={
@@ -207,11 +199,11 @@ def two_files_circular_dep(temp_docs_dir):
         }
 
 @pytest.fixture
-def config_toml(temp_docs_dir):
-    config_file = temp_docs_dir / DEFAULT_CONFIG_FILENAME
+def config_toml(tmp_path: Path):
+    config_file = tmp_path / DEFAULT_CONFIG_FILENAME
     config_file.write_text(f"""
     [validator]
-    path_to_explore = "{temp_docs_dir.resolve()}/docs"
+    path_to_explore = "{tmp_path.resolve()}/docs"
     exclude_patterns = [".git", "node_modules"]
     log_level = "debug"
     report_format = "json"
