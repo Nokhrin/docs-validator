@@ -112,6 +112,22 @@ pip install -e ../docs-validator[dev]
 docs-validator scan . --validate --log-level debug
 ```
 
+### Локальная валидация (pre-commit hook)
+Репозиторий использует нативный hook для проверки перед коммитом.
+Хук блокирует коммит при ошибке тестов или покрытии <70%
+
+```shell
+chmod +x .githooks/pre-commit
+git config core.hooksPath .githooks
+```
+Проверка без создания коммита
+```shell
+bash .githooks/pre-commit
+```
+
+Пропуск проверки: `git commit --no-verify`
+
+
 ### Итерация разработки
 
 1. Вносите правки в `../docs-validator/src/validator/`.

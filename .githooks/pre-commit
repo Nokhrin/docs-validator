@@ -1,0 +1,4 @@
+#!/bin/bash
+set -e
+python -m pytest tests/unit/ tests/integration/ -v --tb=short \
+  --cov=src/validator --cov-report=term --cov-fail-under=70
