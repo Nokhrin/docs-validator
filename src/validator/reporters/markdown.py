@@ -10,6 +10,9 @@ from validator.reporters.base import BaseReporter
 class MarkdownReporter(BaseReporter):
     """Возвращает отчет в формате markdown."""
 
+    def __init__(self, include_files: bool = False):
+        self.include_files = include_files
+
     def report(
             self,
             files: dict[Path, DocumentationFile],
@@ -38,13 +41,19 @@ class MarkdownReporter(BaseReporter):
                     )
             report_lines.append('')
 
-        # files
-        report_lines.extend([
-            '## Файлы',
-            '',
-        ])
-        for file in sorted(files.values(), key=lambda f: f.path):
-            report_lines.append(f'- `{file.path}` - {file.title}')
+        if self.include_files:
+            # files
+            report_lines.append('## Файлы')
+            report_lines.append('')
+            path_width = max((len(str(f.path)) for f in files.values()), default=40)
+            title_width = max((len(f.title) for f in files.values()), default=20)
+            report_lines.append(f'{"Файл":<{path_width}}  {"Заголовок":<{title_width}}  Ссылок')
+            report_lines.append('-' * (path_width + title_width + 10))
+            for file in sorted(files.values(), key=lambda f: f.path):
+                report_lines.append(
+                    f'{str(file.path):<{path_width}}  {file.title:<{title_width}}  {len(file.links_out)}'
+                )
+            report_lines.append('')
 
         # total
         report_lines.extend([

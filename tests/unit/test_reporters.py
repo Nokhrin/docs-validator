@@ -8,6 +8,7 @@ from validator.reporters import HTMLReporter
 from validator.reporters.json import file_to_dict, files_to_json, link_to_dict
 from validator.reporters.markdown import MarkdownReporter
 
+
 class TestMarkdownReporter:
     def test_report_header(self):
         """Отчет содержит заголовок."""
@@ -84,7 +85,7 @@ class TestHTMLReporter:
     def test_report_files_section(self):
         """Отчет содержит секцию файлов."""
         stats = LinkStatistics()
-        reporter = HTMLReporter()
+        reporter = HTMLReporter(include_files=True)
         files = {
             Path('README.md'): DocumentationFile(path=Path('README.md'), title='Readme'),
             Path('guide.md'): DocumentationFile(path=Path('guide.md'), title='Guide'),
@@ -135,7 +136,7 @@ class TestSerializers:
         ftv_list = [
             DocumentationFile(path=Path('TEST-README.md'), title='readme'),
             DocumentationFile(path=Path('TEST-LICENSE.md'), title='license'),
-            ]
+        ]
         ftv_list_serialized = files_to_json(ftv_list)
 
         ftv_list_json = json.loads(ftv_list_serialized)

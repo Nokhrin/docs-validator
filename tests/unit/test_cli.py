@@ -9,17 +9,45 @@ class TestCli:
     def test_execute_scan_delegates_and_handles_output(self, mocker):
         mock_load = mocker.patch('validator.cli.load_configuration')
         mock_run = mocker.patch('validator.cli.run_validation')
+        mock_cli_reporter = mocker.patch('validator.cli.CLIReporter')
+        mock_md_reporter = mocker.patch('validator.cli.MarkdownReporter')
         mock_write = mocker.patch('validator.cli.Path.write_text')
 
-        mock_config = MagicMock(output_file=MagicMock(), log_level='WARNING')
+        mock_config = MagicMock(
+            output_file=MagicMock(),
+            log_level='WARNING',
+            report_format='markdown',
+            report_include_files=False
+        )
         mock_load.return_value = mock_config
-        mock_run.return_value = (0, 'mock_report')
+
+        # Новая сигнатура: (files, issues, stats, exit_code)
+        mock_files = {}
+        mock_issues = []
+        mock_stats = MagicMock()
+        mock_run.return_value = (mock_files, mock_issues, mock_stats, 0)
+
+        mock_cli_instance = MagicMock()
+        mock_cli_reporter.return_value = mock_cli_instance
+
+        mock_md_instance = MagicMock()
+        mock_md_reporter.return_value = mock_md_instance
+        mock_md_instance.report.return_value = 'mock_file_report'
 
         ret = execute_scan(Namespace(path_to_explore='/tmp/docs'))
 
         mock_load.assert_called_once()
         mock_run.assert_called_once_with(mock_config)
-        mock_write.assert_called_once_with('mock_report', encoding='utf-8')
+
+        # Проверка консольного вывода
+        mock_cli_reporter.assert_called_once()
+        mock_cli_instance.report.assert_called_once_with(mock_files, mock_issues, mock_stats)
+
+        # Проверка файлового вывода
+        mock_md_reporter.assert_called_once_with(include_files=False)
+        mock_md_instance.report.assert_called_once_with(mock_files, mock_issues, mock_stats)
+        mock_write.assert_called_once_with('mock_file_report', encoding='utf-8')
+
         assert ret == 0
 
     def test_parser_maps_flags_to_namespace(self):

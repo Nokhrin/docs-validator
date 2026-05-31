@@ -9,6 +9,9 @@ from validator.reporters.base import BaseReporter
 class HTMLReporter(BaseReporter):
     """Генерирует отчет в формате HTML."""
 
+    def __init__(self, include_files: bool = False):
+        self.include_files = include_files
+
     def report(
             self,
             files: dict[Path, DocumentationFile],
@@ -39,11 +42,17 @@ class HTMLReporter(BaseReporter):
             '<main>',
             self._render_summary(files, issues, int_total, ext_total, ext_valid, ext_broken),
             self._render_issues(issues),
-            self._render_files(files),
+        ]
+
+        if self.include_files:
+            html_parts.append(self._render_files(files))
+
+        html_parts.extend([
             '</main>',
             '</body>',
             '</html>',
-        ]
+        ])
+
         return '\n'.join(html_parts)
 
     @staticmethod

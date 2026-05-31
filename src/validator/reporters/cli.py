@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import TextIO
 
-from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics
+from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, SeverityLevel
 from validator.reporters import BaseReporter
 
 log = logging.getLogger(__name__)
@@ -40,80 +40,114 @@ class CLIReporter(BaseReporter):
             return color.apply(text)
         return text
 
+    def _write_line(self, text: str = '') -> None:
+        """Записывает строку в поток с переводом строки."""
+        self.stream.write(text + '\n')
+        self.stream.flush()
+
+import logging
+import sys
+from enum import Enum
+from pathlib import Path
+from typing import TextIO
+
+from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, SeverityLevel
+from validator.reporters import BaseReporter
+
+log = logging.getLogger(__name__)
+
+
+class TermColor(Enum):
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    GRAY = "\033[90m"
+
+    def apply(self, text: str) -> str:
+        return f'{self.value}{text}{TermColor.RESET.value}'
+
+
+class CLIReporter(BaseReporter):
+    def __init__(
+            self,
+            stream: TextIO = sys.stdout,
+            use_color: bool = True,
+    ):
+        self.stream = stream
+        self.use_color = use_color
+
+    def _colorize(self, text: str, color: TermColor) -> str:
+        return color.apply(text) if self.use_color else text
+
+    def _write_line(self, text: str = '') -> None:
+        self.stream.write(text + '\n')
+        self.stream.flush()
+
     def report(
             self,
             files: dict[Path, DocumentationFile],
             issues: list[ValidationIssue],
             link_stat: LinkStatistics,
     ) -> str:
-        """Возвращает строку для вывода в поток."""
-        if not issues:
-            self._write_line(self._colorize('No issues found', TermColor.BLUE))
+        if not files:
+            self._write_line("Файлы для проверки не найдены.")
             return ''
 
-        result_statistics: dict[str, dict[str, int]] = {}
+        file_issues: dict[Path, list[ValidationIssue]] = {}
         for issue in issues:
-            issue_type = issue.issue_type.value
-            severity = issue.severity_level.value.upper()
-            if issue not in result_statistics:
-                result_statistics[issue_type] = {
-                    'ERROR': 0,
-                    'WARNING': 0,
-                    'INFO': 0,
-                }
-            result_statistics[issue_type][severity] += 1
+            file_issues.setdefault(issue.src_file.path, []).append(issue)
 
-            self._write_line('', 'info')
-            self._write_line(self._colorize('=' * 42, TermColor.GRAY), 'info')
-            self._write_line(self._colorize('ISSUES SUMMARY', TermColor.BOLD), 'info')
-            self._write_line(self._colorize('=' * 42, TermColor.GRAY), 'info')
+        rows: list[tuple[str, int, int, int, int]] = []
+        for file_path, file_obj in sorted(files.items(), key=lambda x: str(x[0])):
+            f_issues = file_issues.get(file_path, [])
+            errors = sum(1 for i in f_issues if i.severity_level == SeverityLevel.ERROR)
+            warnings = sum(1 for i in f_issues if i.severity_level == SeverityLevel.WARNING)
+            total_links = len(file_obj.links_out)
+            broken_links = len({i.link for i in f_issues if i.link is not None})
+            rows.append((str(file_path), errors, warnings, total_links, broken_links))
 
-        total_count = 0
-        error_count = 0
+        col_file_width = max((len(r[0]) for r in rows), default=10)
+        col_file_width = max(col_file_width, len("File"))
 
-        for issue_type in sorted(result_statistics.keys()):
-            issue_count = result_statistics[issue_type]
-            issue_type_total: int = sum(issue_count.values())
-            errors_total: int = issue_count.get('ERROR', 0)
+        lines: list[str] = ['']
+        header = f"{'File':<{col_file_width}} {'Errors':>7} {'Warnings':>9} {'Links':>6} {'Broken':>7}"
+        lines.append(self._colorize(header, TermColor.BOLD))
+        lines.append('-' * len(header))
 
-            total_count += issue_type_total
-            error_count += errors_total
+        for path, errors, warnings, total, broken in rows:
+            line = f"{path:<{col_file_width}} {errors:>7} {warnings:>9} {total:>6} {broken:>7}"
+            if errors > 0:
+                line = self._colorize(line, TermColor.RED)
+            elif warnings > 0:
+                line = self._colorize(line, TermColor.YELLOW)
+            lines.append(line)
 
-            parts = []
-            if issue_count["ERROR"] > 0:
-                parts.append(f"{issue_count['ERROR']} ERR")
-            if issue_count["WARNING"] > 0:
-                parts.append(f"{issue_count['WARNING']} WARN")
-            if issue_count["INFO"] > 0:
-                parts.append(f"{issue_count['INFO']} INFO")
+        lines.append('-' * len(header))
 
-            details = ', '.join(parts) if parts else f'{issue_count} items'
+        # Итог по столбцам
+        total_errors = sum(r[1] for r in rows)
+        total_warnings = sum(r[2] for r in rows)
+        total_links = sum(r[3] for r in rows)
+        total_broken = sum(r[4] for r in rows)
 
-            line_type = issue_type
-            if errors_total > 0:
-                line_type = self._colorize(issue_type, TermColor.RED)
+        # Итоговая строка
+        summary_label = f"{len(files)}"
+        summary_line = f"{summary_label:<{col_file_width}} {total_errors:>7} {total_warnings:>9} {total_links:>6} {total_broken:>7}"
+        # lines.append('TOTAL'
+        footer = f"TOTAL\n{'Files':<{col_file_width}} {'Errors':>7} {'Warnings':>9} {'Links':>6} {'Broken':>7}"
+        lines.append(self._colorize(footer, TermColor.BOLD))
+        lines.append(summary_line)
+        lines.append('-' * len(header))
 
-            self._write_line(f'{line_type:<20}: {details}', 'warning')
+        # Сводка
+        lines.append(f'Всего проблем: {len(issues)}')
+        lines.append(f'Внутренних ссылок: {link_stat.internal_total} (битых: {link_stat.internal_broken})')
+        lines.append(f'Внешних ссылок: {link_stat.external_total} (битых: {link_stat.external_broken})')
+        lines.append('')
 
-        self._write_line('-' * 42, 'info')
-
-        if error_count > 0:
-            msg = f'TOTAL: {total_count} issues ({error_count} errors)'
-            self._write_line(self._colorize(msg, TermColor.RED), 'error')
-        else:
-            msg = f'TOTAL: {total_count} issues (no critical errors)'
-            self._write_line(self._colorize(msg, TermColor.YELLOW), 'warning')
-
-        self._write_line(self._colorize('=' * 42, TermColor.GRAY), 'info')
-        self._write_line('', 'info')
-
+        for line in lines:
+            self._write_line(line)
         return ''
-
-    @staticmethod
-    def _write_line(text: str = '', log_level: str = 'info') -> None:
-        if log_level == 'warning':
-            log.warning(text)
-        elif log_level == 'error':
-            log.error(text)
-        elif log_level == 'info':
-            log.info(text)

@@ -70,7 +70,7 @@ def collect_links(files: dict[Path, DocumentationFile], root_path: Path) -> dict
         try:
             full_path = root_path / file_path
             file_content = full_path.read_text(encoding='utf-8')
-            file_obj.links_out=set(LinkExtractor(file_obj.path).get_links_from_file(file_content))
+            file_obj.links_out = set(LinkExtractor(file_obj.path).get_links_from_file(file_content))
         except IOError as err:
             log.error('Не удалось прочитать %s: %s', file_obj.path, err)
             file_obj.links_out = set()
@@ -129,72 +129,6 @@ def aggregate_issue_statistics(
     )
 
 
-def generate_summary(
-        files: dict[Path, DocumentationFile],
-        issues: list[ValidationIssue],
-        stats: LinkStatistics,
-) -> str:
-    files_total = len(files)
-    links_total = sum(len(f.links_out) for f in files.values())
-
-    error_count = sum(1 for i in issues if i.severity_level == SeverityLevel.ERROR)
-    warning_count = sum(1 for i in issues if i.severity_level == SeverityLevel.WARNING)
-
-    lines = [
-        '=' * 40,
-        'СТАТИСТИКА ВЫПОЛНЕНИЯ',
-        '=' * 40,
-        f'Обработано файлов: {files_total}',
-        f'Обнаружено ссылок: {links_total}',
-        f'Внутренних ссылок: {stats.internal_total}',
-        f'Внешних ссылок: {stats.external_total} (недоступно: {stats.external_broken})',
-    ]
-
-    if issues:
-        parts = []
-        if error_count:
-            parts.append(f'ошибок: {error_count}')
-        if warning_count:
-            parts.append(f'предупреждений: {warning_count}')
-        detail = f' ({', '.join(parts)})' if parts else ''
-        lines.append(f'Найдено проблем: {len(issues)}{detail}')
-    else:
-        lines.append('Проблем не обнаружено.')
-
-    lines.append('=' * 40)
-    return '\n'.join(lines)
-
-def generate_report(
-        files: dict[Path, DocumentationFile],
-        issues: list[ValidationIssue],
-        stats: LinkStatistics,
-        config: ValidatorConfig,
-) -> str:
-    reporters: dict[str, Callable[[dict[Path, DocumentationFile], list[ValidationIssue], LinkStatistics], str]] = {
-        'json': lambda f, i, s: JSONReporter().report(f, i, s),
-        'markdown': lambda f, i, s: MarkdownReporter().report(f, i, s),
-        'html': lambda f, i, s: HTMLReporter().report(f, i, s),
-    }
-    make_report = reporters.get(config.report_format, reporters['markdown'])
-
-    return make_report(files, issues, stats)
-
-def write_report(report_content: str, stream: TextIO = sys.stdout, output_path: Path | None = None) -> None:
-    if output_path:
-        output_path.write_text(report_content, encoding='utf-8')
-    else:
-        stream.write(report_content + '\n')
-
-
-@contextmanager
-def open_output(path: Path | None) -> Iterator[TextIO]:
-    if path is None:
-        yield sys.stdout
-    else:
-        with open(path, 'w', encoding='utf-8') as file:
-            yield file
-
-
 def get_exit_code(
         issues: list[ValidationIssue],
         config: ValidatorConfig,
@@ -203,22 +137,25 @@ def get_exit_code(
         return 1
     return 0
 
-def run_validation(config: ValidatorConfig) -> tuple[int,str]:
+
+def run_validation(
+        config: ValidatorConfig
+) -> tuple[dict[Path, DocumentationFile], list[ValidationIssue], LinkStatistics, int]:
     if config.path_to_explore is None:
         log.error('Не указана директория для сканирования')
-        return 1, ''
+        return {}, [], LinkStatistics(), 1
     path_to_explore = Path(config.path_to_explore)
     if not path_to_explore.exists():
         log.error('Директория не найдена: %s', path_to_explore)
-        return 1, ''
+        return {}, [], LinkStatistics(), 1
 
-    files = explore_files(path_to_explore, config)
+    files: dict[Path, DocumentationFile] = explore_files(path_to_explore, config)
     if not files:
-        return 0, ''
+        return {}, [], LinkStatistics(), 0
 
     collect_links(files, path_to_explore)
-    issues=collect_issues(files,config) if config.is_validate else []
-    stats=aggregate_issue_statistics(files,issues)
-    report_content = generate_report(files, issues, stats, config)
+    issues: list[ValidationIssue] = collect_issues(files, config) if config.is_validate else []
+    stats: LinkStatistics = aggregate_issue_statistics(files, issues)
+    exit_code: int = get_exit_code(issues, config)
 
-    return get_exit_code(issues, config), report_content
+    return files, issues, stats, exit_code

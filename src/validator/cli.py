@@ -14,6 +14,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from validator.pipeline import load_configuration, run_validation
+from validator.reporters import CLIReporter, JSONReporter, MarkdownReporter, HTMLReporter
 
 log = logging.getLogger(__name__)
 
@@ -124,12 +125,23 @@ def execute_scan(args: argparse.Namespace) -> int:
         force=True
     )
 
-    exit_code, report_content = run_validation(validation_config)
+    files, issues, stats, exit_code = run_validation(validation_config)
 
+    # Консольный вывод
+    CLIReporter(stream=sys.stdout).report(files, issues, stats)
+
+    # Файловый вывод
     if validation_config.output_file:
-        Path(validation_config.output_file).write_text(report_content, encoding='utf-8')
-    elif report_content:
-        sys.stdout.write(report_content + '\n')
+        reporters = {
+            'json': JSONReporter(),
+            'markdown': MarkdownReporter(include_files=validation_config.report_include_files),
+            'html': HTMLReporter(include_files=validation_config.report_include_files),
+        }
+        reporter = reporters.get(validation_config.report_format, reporters['markdown'])
+        content = reporter.report(files, issues, stats)
+        Path(validation_config.output_file).write_text(content, encoding='utf-8')
+
+    return exit_code
 
     return exit_code
 

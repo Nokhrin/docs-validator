@@ -37,21 +37,25 @@ class TestPipeline:
 
         mock_explore = mocker.patch('validator.pipeline.explore_files', return_value=mock_files)
         mock_links = mocker.patch('validator.pipeline.collect_links')
-        mock_issues = mocker.patch('validator.pipeline.collect_issues')
-        mock_agg = mocker.patch('validator.pipeline.aggregate_issue_statistics')
-        mock_report = mocker.patch('validator.pipeline.generate_report', return_value=' report ')
-        mocker.patch('validator.pipeline.get_exit_code', return_value=0)
 
-        exit_code, content = run_validation(cfg)
+        mock_issues_result = [mocker.MagicMock()]
+        mock_issues = mocker.patch('validator.pipeline.collect_issues', return_value=mock_issues_result)
+
+        mock_stats = mocker.MagicMock()
+        mock_agg = mocker.patch('validator.pipeline.aggregate_issue_statistics', return_value=mock_stats)
+        mocker.patch('validator.pipeline.get_exit_code', return_value=1)
+
+        files, issues, stats, exit_code = run_validation(cfg)
 
         mock_explore.assert_called_once_with(tmp_path, cfg)
         mock_links.assert_called_once_with(mock_files, tmp_path)
         mock_issues.assert_called_once_with(mock_files, cfg)
-        mock_agg.assert_called_once()
-        mock_report.assert_called_once()
+        mock_agg.assert_called_once_with(mock_files, mock_issues_result)
 
-        assert content == ' report '
-        assert exit_code == 0
+        assert files == mock_files
+        assert issues == mock_issues_result
+        assert stats == mock_stats
+        assert exit_code == 1
 
     def test_collect_issues_respects_skip_external(self, mocker, tmp_path):
         mock_external_cls = mocker.patch('validator.pipeline.ExternalLinkValidator')

@@ -1,5 +1,5 @@
 [validator]
-exclude_patterns = [".git", "node_modules", "*.tmp"]
+exclude_patterns = [".git", "node_modules", "*.tmp", "templates"]
 log_level = "warning"
 report_format = "markdown"
 is_validate = true
@@ -8,3 +8,4 @@ external_timeout_sec = 5
 max_threads_number = 1
 hosts_to_ignore = ["localhost", "127.0.0.1"]
 is_skip_external = true
+report_include_files = true

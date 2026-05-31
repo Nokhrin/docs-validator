@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from concurrent.futures import as_completed
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
@@ -79,46 +80,46 @@ class ExternalLinkValidator(BaseValidator):
             )
         return None
 
-    def validate(
-            self,
-            files_to_validate: dict[Path, DocumentationFile],
-            root_dir: Path,
-    ) -> list[ValidationIssue]:
-        log.debug('Начало проверки внешних ссылок')
-        targets: tuple[Link, DocumentationFile] = []
-        ignored_count: int = 0
+    def validate(self, files_to_validate: dict[Path, DocumentationFile], root_dir: Path) -> list[ValidationIssue]:
+        targets_by_file: dict[Path, list[Link]] = defaultdict(list)
+        ignored_count = 0
 
         for doc_file in files_to_validate.values():
-            for link_to_validate in doc_file.links_out:
-                if not link_to_validate.is_external:
+            for link in doc_file.links_out:
+                if not link.is_external:
                     continue
-                if self._is_host_ignored(link_to_validate.uri):
-                    log.debug(f'Ссылка %s исключена из проверки по требованию отбора', link_to_validate.uri)
+                if self._is_host_ignored(link.uri):
                     ignored_count += 1
                     continue
-                log.debug('В файле %s найдена внешняя ссылка: %s', doc_file.path, link_to_validate.uri)
-                targets.append((link_to_validate, doc_file))
-                log.debug('В файле %s отсутствуют внешние ссылки', doc_file.path)
+                targets_by_file[doc_file.path].append(link)
 
         if ignored_count:
-            log.debug('По требованию отбора всего непроверенных ссылок: %d', ignored_count)
-
-        if not targets:
-            log.debug('Внешние ссылки отсутствуют')
+            log.info('Исключено ссылок по hosts_to_ignore: %d', ignored_count)
+        if not targets_by_file:
+            log.info('Внешние ссылки отсутствуют')
             return []
 
-        issues: list[ValidationIssue] = []
-        with requests.Session() as session, ThreadPoolExecutor(max_workers=self.max_threads_number) as executor:
-            futures = {}
-            for link_to_validate, doc_file in targets:
-                futures[
-                    executor.submit(
-                        self._check_single_link, link_to_validate, doc_file, session
-                    )] = (link_to_validate, doc_file)
-            for future in as_completed(futures):
-                issue = future.result()
-                if issue:
-                    issues.append(issue)
+        total_links = sum(len(links) for links in targets_by_file.values())
+        log.info('Начало проверки внешних ссылок: %d ссылок в %d файлах', total_links, len(targets_by_file))
 
-        log.debug('Проверка внешних ссылок завершена. Найдено проблем: %d', len(issues))
+        issues: list[ValidationIssue] = []
+
+        with requests.Session() as session, ThreadPoolExecutor(max_workers=self.max_threads_number) as executor:
+            for file_path, links in targets_by_file.items():
+                log.info('Проверка файла: %s (%d внешних ссылок)', file_path, len(links))
+                doc_file = files_to_validate[file_path]
+
+                file_futures = [
+                    executor.submit(self._check_single_link, link, doc_file, session)
+                    for link in links
+                ]
+
+                for future in as_completed(file_futures):
+                    issue = future.result()
+                    if issue:
+                        issues.append(issue)
+
+                log.info('Проверка завершена: %s', file_path)
+
+        log.info('Проверка внешних ссылок завершена. Найдено проблем: %d', len(issues))
         return issues
