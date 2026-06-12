@@ -113,6 +113,17 @@ class CLIReporter(BaseReporter):
 
         lines.append('-' * len(header))
 
+        if issues:
+            lines.append('')
+            lines.append(self._colorize('Error Details:', TermColor.BOLD))
+            for issue in issues:
+                if issue.severity_level == SeverityLevel.ERROR:
+                    location = f'{issue.src_file.path}:{issue.link.line_number}' \
+                        if issue.link else str(issue.src_file.path)
+                    target = issue.link.uri if issue.link else 'N/A'
+                    lines.append(f'  {self._colorize(location, TermColor.YELLOW)} -> {target}')
+            lines.append('')
+
         total_errors = sum(r[1] for r in rows)
         total_warnings = sum(r[2] for r in rows)
         total_links = sum(r[3] for r in rows)
