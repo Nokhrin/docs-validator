@@ -1,73 +1,54 @@
-# Статический анализатор связности документации
+# Documentation Connectivity Static Analyzer Specification
 
-## Проблема
-Документация может фрагментироваться:
-- Ссылки ведут на удалённые файлы или несуществующие якоря
-- Файлы становятся «сиротами» - на них нет входящих ссылок
-- Cross-references устаревают после рефакторинга разделов
+## Problem Statement
+Documentation repositories frequently suffer from structural degradation over time:
+- Links point to deleted files, renamed directories, or non-existent anchors.
+- Files become "orphans" (isolated pages with no incoming links), making them undiscoverable.
+- Cross-references become outdated after section refactoring.
+- Circular dependencies create confusing navigation loops.
+This fragmentation degrades the user experience and increases maintenance overhead.
 
-Это делает работу с документацией неэффективной для пользователей.
+## Solution
+`docs-validator` is a Python-based CLI tool that performs static analysis of documentation repositories. It:
+- Recursively scans `.md` and `.markdown` files for internal and external links.
+- Builds a directed connectivity graph of the documentation structure.
+- Applies a set of validation rules to detect broken links, orphaned files, missing anchors, and circular dependencies.
+- Generates structured reports (CLI, Markdown, HTML, JSON) suitable for CI/CD integration.
 
-## Решение
-`docs-validator` - CLI-инструмент на Python, который:
-- Сканирует `.md`/`.html` файлы на наличие внутренних ссылок
-- Строит направленный граф связности документации
-- Сообщает о битых ссылках, изолированных файлах, отсутствующих якорях
-- Генерирует отчёт в Markdown/HTML для интеграции в CI
+## System Architecture
 
+The system is organized into distinct logical layers, corresponding to the `src/validator/` directory structure.
 
-## Спринт 1: Ядро - сканирование и парсинг ссылок
+### 1. Core Engine (`src/validator/core/`)
+Responsible for data representation, file discovery, and structural analysis.
+- Data Models (`models.py`): Defines immutable and mutable data structures: `Link`, `DocumentationFile`, `ValidationIssue`, `ValidationResult`, `LinkStatistics`, and enumerations (`LinkType`, `SeverityLevel`, `IssueType`).
+- File Discovery (`explorer.py`): `FilesExplorer` class performs recursive directory traversal, filtering by allowed extensions (`.md`, `.markdown`) and applying exclusion patterns (e.g., `.git`, `node_modules`, `.venv`).
+- Link Extraction (`extractor.py`): `LinkExtractor` uses regular expressions to parse Markdown syntax (`[text](url)` and `![alt](url)`), determining the `LinkType` (INTERNAL, EXTERNAL, ANCHOR, IMAGE) and isolating anchor fragments.
+- Graph Analysis (`connectivity_graph.py`): `ConnectivityGraph` utilizes `networkx.DiGraph` to model file dependencies. It provides methods to identify orphaned nodes (`get_orphans`), unreachable subgraphs (`get_unreachable`), and cyclic dependencies (`get_simple_cycles`).
+- MkDocs Integration (`mkdocs_parser.py`): Parses `mkdocs.yml` to extract navigation roots, ensuring that files listed in the site navigation are not falsely flagged as orphans.
 
-| Шаг | Задача              | Файл                                   |
-|-----|---------------------|----------------------------------------|
-| 1.1 | Модель данных       | `src/validator/core/models.py`         |
-| 1.2 | Сканирование файлов | `src/validator/core/files_explorer.py` |
-| 1.3 | Парсинг ссылок      | `src/validator/core/link_extractor.py` |
-| 1.4 | CLI интерфейс       | `src/validator/cli.py`                 |
-| 1.5 | Тесты               | `tests/unit/`                          |
-| 1.6 | Интеграция          | `pyproject.toml`                       |
+### 2. Validation Rules (`src/validator/rules/`)
+Implements the `BaseValidator` interface. Each validator operates on the populated `DocumentationFile` dictionary and the root directory path.
+- `BrokenLinkValidator`: Resolves relative paths and verifies `Path.exists()` for all `INTERNAL` links.
+- `OrphanFileValidator`: Identifies files with zero incoming links (`in_degree == 0`), explicitly excluding standard root files (`README.md`, `index.md`) and paths defined in `mkdocs.yml`.
+- `AnchorLinkValidator`: Extracts Markdown headers (`^(#{1,6})\s+(.+)$`), normalizes them to standard anchor formats (lowercase, spaces to hyphens, stripping special characters), and verifies their existence against `ANCHOR` link targets.
+- `CircularDependencyValidator`: Leverages `ConnectivityGraph.get_simple_cycles()` to detect and report files participating in reference loops.
+- `ExternalLinkValidator`: Validates `EXTERNAL` links using `requests.Session` with configurable timeouts. It employs `ThreadPoolExecutor` for concurrent checking and supports a `hosts_to_ignore` allowlist to bypass local or known-unreliable domains.
 
-## Спринт 2: Ядро - граф зависимостей; Валидаторы
+ls### 3. Reporting Layer (`src/validator/reporters/`)
+Implements the `BaseReporter` interface to format `ValidationResult` data.
+- `CLIReporter`: Outputs a colorized, tabular summary to `stdout`/`stderr` for immediate developer feedback.
+- `MarkdownReporter`: Generates a structured Markdown document suitable for committing to the repository or posting as a PR comment.
+- `HTMLReporter`: Produces a standalone, styled HTML file with navigation, summary statistics, detailed issue breakdowns, and optional full file-link mapping.
+- `JSONReporter`: Serializes the validation state using a custom `DataclassEncoder` for programmatic consumption by external tools or dashboards.
 
-| Шаг | Задача                                      | Файл                                      | Критерий готовности                                        |
-|-----|---------------------------------------------|-------------------------------------------|------------------------------------------------------------|
-| 2.1 | Граф зависимостей                           | `src/validator/core/graph.py`             | `ConnectivityGraph` строит граф из `FileToValidate[]`      |
-| 2.2 | BrokenLinkValidator                         | `src/validator/validators/broken_link.py` | Проверяет `Path.exists()` для внутренних ссылок            |
-| 2.3 | OrphanFileValidator                         | `src/validator/validators/orphan_file.py` | Находит файлы с `in_degree == 0` (кроме корневых)          |
-| 2.4 | AnchorValidator                             | `src/validator/validators/anchor.py`      | Проверяет существование якорей в целевых файлах            |
-| 2.5 | Интеграция в CLI                            | `src/validator/cli.py`                    | `--validate` флаг запускает валидаторы                     |
-| 2.6 | Тесты валидаторов                           | `tests/unit/test_validators.py`           | Фикстуры с битыми ссылками, сиротами, недостающими якорями |
-| 2.7 | Зависимость networkx (операции над графами) | `pyproject.toml`                          | `networkx>=3.0` в `dependencies`                           |
+### 4. Orchestration & Configuration (`src/validator/`)
+- Configuration Management (`config.py`): Defines the `ValidatorConfig` dataclass. Handles loading defaults, parsing `.docs-validator.toml` files, and merging CLI arguments with file-based settings.
+- Execution Pipeline (`pipeline.py`): The central orchestrator (`run_validation`). It sequences the operations: configuration loading -> file exploration -> link collection -> rule validation -> statistics aggregation -> exit code determination.
+- CLI Entry Point (`cli.py`): Parses `sys.argv` using `argparse`, initializes logging, invokes the pipeline, and triggers the appropriate reporter based on the `--report` flag.
 
-## Спринт 3: Интеграция валидаторов; Отчётность
-
-| Шаг | Задача                          | Файл                                      | Критерий готовности                     | Статус |
-|-----|---------------------------------|-------------------------------------------|-----------------------------------------|--------|
-| 3.1 | Исправление BrokenLinkValidator | `src/validator/validators/broken_link.py` | Пути разрешаются относительно root_file | done   |
-| 3.2 | Исправление OrphanFileValidator | `src/validator/validators/orphan_file.py` | Корректные сообщения об ошибках         | done   |
-| 3.3 | Интеграция валидаторов в CLI    | `src/validator/cli.py`                    | --validate запускает валидацию          | done   |
-| 3.4 | MarkdownReporter                | `src/validator/reporters/markdown.py`     | Отчёт в Markdown с таблицами            | done   |
-| 3.5 | HTMLReporter                    | `src/validator/reporters/html.py`         | HTML-отчёт с навигацией                 | done   |
-| 3.6 | Тесты валидаторов               | `tests/unit/test_validators.py`           | 6 тестов, покрытие ≥80%                 | done   |
-| 3.7 | Покрытие тестами                | CI workflow                               | --cov-fail-under=70 проходит            | done   |
-
-## Спринт 4: Разработка + Интеграционное тестирование
-
-| Шаг | Задача                            | Файл                                   | Критерий готовности                                 | Статус |
-|-----|-----------------------------------|----------------------------------------|-----------------------------------------------------|--------|
-| 4.1 | AnchorValidator                   | `src/validator/validators/anchor.py`   | Проверка якорей в файлах                            | done   |
-| 4.2 | CircularDependencyValidator       | `src/validator/validators/circular.py` | Обнаружение циклов                                  | done   |
-| 4.3 | Применении конфигурации из файла  | `src/validator/config.py`              | `.docs-validator.toml`                              | done   |
-| 4.4 | Тестирование на реальных проектах | `tests/integration/`                   | Успешная валидация `notes_and_thoughts`, `playbook` | done   |
-
-
-## Спринт 5: Валидация внешних ссылок
-
-| Шаг | Задача                                      | Файл                                        | Статус |
-|-----|---------------------------------------------|---------------------------------------------|--------|
-| 5.1 | Добавление HTTP-клиента и конфигурации сети | `pyproject.toml`, `src/validator/config.py` | done   |
-| 5.2 | Реализация `ExternalLinkValidator`          | `src/validator/validators/external_link.py` | done   |
-| 5.3 | Интеграция валидатора в CLI                 | `src/validator/cli.py`                      | wip    |
-| 5.4 | Расширение статистики ссылок                | `src/validator/cli.py`, репортеры           |        |
-| 5.5 | Тестирование сетевой логики                 | `tests/unit/test_external_link.py`          |        |
-| 5.6 | Документация                                | `docs/implementation.md`, `README.md`       |        |
+## Key Technical Constraints & Behaviors
+1. Path Resolution: All internal link targets are resolved relative to the directory of the source file containing the link, not the execution root.
+2. Concurrency: External link validation is the only operation that utilizes multithreading (`ThreadPoolExecutor`), bounded by `max_threads_number` to prevent resource exhaustion.
+3. Graceful Degradation: I/O errors (e.g., unreadable files) are logged as warnings/errors but do not crash the entire validation pipeline.
+4. Extensibility: New validation rules can be added by subclassing `BaseValidator` and registering the class in the `pipeline.py` validator list.
