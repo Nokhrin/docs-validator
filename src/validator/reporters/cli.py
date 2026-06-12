@@ -119,6 +119,16 @@ class CLIReporter(BaseReporter):
         lines.append(f'External links: {link_stat.external_total} (broken: {link_stat.external_broken})')
         lines.append('')
 
+        error_issues = [issue for issue in issues if issue.severity_level == SeverityLevel.ERROR]
+        if error_issues:
+            lines.append('')
+            lines.append(self._colorize('Error Summary:', TermColor.BOLD))
+            for issue in error_issues:
+                location = f'{issue.src_file.path}:{issue.link.line_number}' if issue.link else str(issue.src_file.path)
+                target = issue.link.uri if issue.link else 'N/A'
+                lines.append(f'  {self._colorize("[ERROR]", TermColor.RED)} {self._colorize(location, TermColor.YELLOW)} -> {target}')
+            lines.append('')
+
         for line in lines:
             self._write_line(line)
         return ''
