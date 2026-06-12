@@ -8,6 +8,7 @@ import pytest
 from validator.cli import create_parser
 from validator.config import DEFAULT_CONFIG_FILENAME
 from validator.core.connectivity_graph import ConnectivityGraph
+from validator.core.extractor import LinkExtractor
 from validator.core.models import DocumentationFile, Link, LinkType
 
 
@@ -19,8 +20,10 @@ def parser():
 
 @pytest.fixture
 def markdown_link_pattern():
-    """Скомпилированный паттерн Markdown ссылок."""
-    return re.compile(r'(!?)\[(.*?)\]\(([^)]+)\)')
+    return re.compile(
+        r'(!?)\[(.*?)\]\(([^()]+(?:\([^()]*\)[^()]*)*)\)',
+        re.MULTILINE
+    )
 
 
 @pytest.fixture
@@ -29,8 +32,7 @@ def graph():
 
 
 @pytest.fixture
-def root_md_file(tmp_path: Path) -> dict[Path, DocumentationFile]:
-    """Создает один тестовый .md-файл с содержимым."""
+def one_md_file_in_root(tmp_path: Path) -> dict[Path, DocumentationFile]:
     file_path = tmp_path / "README.md"
     file_path.write_text(
         "# README Test Document\n\n"
@@ -182,7 +184,6 @@ def three_files_no_cycles(tmp_path: Path) -> dict[Path, DocumentationFile]:
 
 @pytest.fixture
 def two_files_circular_dep(tmp_path: Path):
-    """Создаёт тестовые данные с циклическими зависимостями."""
     (tmp_path / 'a.md').write_text('[Link](./b.md)')
     (tmp_path / 'b.md').write_text('[Link](./a.md)')
     return  {

@@ -27,9 +27,9 @@ class TestOrphanFileValidator:
         orphan_issues = [i for i in issues if i.issue_type == IssueType.ORPHAN_FILE]
         assert len(orphan_issues) == 1
 
-    def test_one_root_file_no_orphans(self, root_md_file, tmp_path: Path):
+    def test_one_root_file_no_orphans(self, one_md_file_in_root, tmp_path: Path):
         validator = OrphanFileValidator()
-        issues = validator.validate(root_md_file, tmp_path)
+        issues = validator.validate(one_md_file_in_root, tmp_path)
 
         orphan_issues = [i for i in issues if i.issue_type == IssueType.ORPHAN_FILE]
         assert len(orphan_issues) == 0

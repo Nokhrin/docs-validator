@@ -11,18 +11,6 @@ from requests import RequestException
 from validator.core.models import DocumentationFile, Link, ValidationIssue, IssueType, SeverityLevel
 from validator.rules import BaseValidator
 
-from importlib.metadata import version, PackageNotFoundError
-
-# Динамическое получение версии из pyproject.toml / метаданных пакета
-try:
-    _pkg_version = version("docs-validator")
-except PackageNotFoundError:
-    _pkg_version = "0.0.0-dev"
-
-USER_AGENT = (
-    f'docs-validator/{_pkg_version} '
-    f'(+https://github.com/Nokhrin/docs-validator)'
-)
 log = logging.getLogger(__name__)
 
 
@@ -58,20 +46,17 @@ class ExternalLinkValidator(BaseValidator):
             src_file: DocumentationFile,
             session: requests.Session
     ) -> ValidationIssue | None:
-        headers = {'User-Agent': USER_AGENT}
         try:
             resp = session.head(
                 link.uri,
                 timeout=self.external_timeout_sec,
                 allow_redirects=True,
-                headers=headers,
             )
             if resp.status_code == 405:
                 resp = session.get(
                     link.uri,
                     timeout=self.external_timeout_sec,
                     allow_redirects=True,
-                    headers=headers,
                 )
                 resp.close()
 

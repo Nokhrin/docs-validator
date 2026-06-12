@@ -1,4 +1,3 @@
-"""Интерфейс валидатора."""
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -12,5 +11,4 @@ class BaseValidator(ABC):
             files_to_validate: dict[Path, DocumentationFile],
             root_dir: Path,
     ) -> list[ValidationIssue]:
-        """Возвращает список ошибок валидации."""
         pass
