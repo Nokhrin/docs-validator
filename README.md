@@ -1,4 +1,4 @@
-ы# Documentation Link Validator
+# Documentation Link Validator
 A static analyzer for documentation link integrity in Markdown-based repositories. The tool detects broken links, orphan files, missing anchors, and circular dependencies, generating reports in Markdown, HTML, or JSON formats for CI/CD integration.
 
 ## Key Features
@@ -10,7 +10,10 @@ A static analyzer for documentation link integrity in Markdown-based repositorie
 | Validation Rules | Checks for broken links, orphan files, missing anchors, and circular dependencies. |
 | Reporting        | Generates CLI, Markdown, HTML, and JSON reports for CI/CD integration.             |
 
-[Architecture Details](docs/architecture.md) | [Specification](docs/specification.md) | [Developer Guide](docs/development.md)
+[CI/CD Integration Guide](docs/ci-integration.md)  
+[Developer Guide](docs/development.md)  
+[Specification](docs/specification.md)  
+[Architecture Details](docs/architecture.md)  
 
 ---
 
@@ -51,7 +54,6 @@ docs-validator scan ./docs --report html --output /tmp/report.html
 docs-validator scan ./docs --validate --fail-on-error
 ```
 
-### 5. Using a Configuration File
 ### 5. Using a Configuration File
 By default, the tool looks for the `.docs-validator.toml` file in the root directory of the project being scanned. Alternatively, you can specify a custom path using the `--config` flag.
 

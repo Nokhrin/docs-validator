@@ -125,9 +125,9 @@ class CLIReporter(BaseReporter):
         lines.append(summary_line)
         lines.append('-' * len(header))
 
-        lines.append(f'Всего проблем: {len(issues)}')
-        lines.append(f'Внутренних ссылок: {link_stat.internal_total} (битых: {link_stat.internal_broken})')
-        lines.append(f'Внешних ссылок: {link_stat.external_total} (битых: {link_stat.external_broken})')
+        lines.append(f'Total issues: {len(issues)}')
+        lines.append(f'Internal links: {link_stat.internal_total} (broken: {link_stat.internal_broken})')
+        lines.append(f'External links: {link_stat.external_total} (broken: {link_stat.external_broken})')
         lines.append('')
 
         for line in lines:

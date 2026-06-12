@@ -6,7 +6,7 @@ from validator.core.models import Link, LinkType
 
 
 class LinkExtractor:
-    """
+    r"""
     Regex pattern for parsing Markdown inline links and images.
     Supports one level nested parentheses in URLs (e.g., Wikipedia links like `.../Page_(disambiguation)`).
 
