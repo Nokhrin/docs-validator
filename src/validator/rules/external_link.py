@@ -11,11 +11,23 @@ from requests import RequestException
 from validator.core.models import DocumentationFile, Link, ValidationIssue, IssueType, SeverityLevel
 from validator.rules import BaseValidator
 
+from importlib.metadata import version, PackageNotFoundError
+
+# Динамическое получение версии из pyproject.toml / метаданных пакета
+try:
+    _pkg_version = version("docs-validator")
+except PackageNotFoundError:
+    _pkg_version = "0.0.0-dev"
+
+USER_AGENT = (
+    f'docs-validator/{_pkg_version} '
+    f'(+https://github.com/Nokhrin/docs-validator)'
+)
 log = logging.getLogger(__name__)
 
 
 class ExternalLinkValidator(BaseValidator):
-    """Проверяет доступность ресурсов по внешним ссылкам."""
+    """Checks the availability of resources via external links."""
 
     def __init__(
             self,
@@ -46,17 +58,20 @@ class ExternalLinkValidator(BaseValidator):
             src_file: DocumentationFile,
             session: requests.Session
     ) -> ValidationIssue | None:
+        headers = {'User-Agent': USER_AGENT}
         try:
             resp = session.head(
                 link.uri,
                 timeout=self.external_timeout_sec,
                 allow_redirects=True,
+                headers=headers,
             )
             if resp.status_code == 405:
                 resp = session.get(
                     link.uri,
                     timeout=self.external_timeout_sec,
                     allow_redirects=True,
+                    headers=headers,
                 )
                 resp.close()
 
@@ -66,18 +81,20 @@ class ExternalLinkValidator(BaseValidator):
                     severity_level=SeverityLevel.ERROR,
                     src_file=src_file,
                     link=link,
-                    message=f'Внешний ресурс недоступен ({resp.status_code}): {link.uri}',
-                    suggestion='Проверьте работоспособность URL или обновите ссылку',
+                    message=f'External resource unavailable ({resp.status_code}): {link.uri}',
+                    suggestion='Check URL availability or update the link',
                 )
+
         except RequestException as err:
             return ValidationIssue(
                 issue_type=IssueType.EXTERNAL_UNREACHABLE,
                 severity_level=SeverityLevel.ERROR,
                 src_file=src_file,
                 link=link,
-                message=f'Ошибка соединения: {link.uri}\n{err}',
-                suggestion='Проверьте URL и сетевое подключение',
+                message=f'Connection error: {link.uri}\n{err}',
+                suggestion='Check the URL and network connection',
             )
+
         return None
 
     def validate(self, files_to_validate: dict[Path, DocumentationFile], root_dir: Path) -> list[ValidationIssue]:
@@ -94,19 +111,19 @@ class ExternalLinkValidator(BaseValidator):
                 targets_by_file[doc_file.path].append(link)
 
         if ignored_count:
-            log.info('Исключено ссылок по hosts_to_ignore: %d', ignored_count)
+            log.info('Links excluded by hosts_to_ignore: %d', ignored_count)
         if not targets_by_file:
-            log.info('Внешние ссылки отсутствуют')
+            log.info('No external links found')
             return []
 
         total_links = sum(len(links) for links in targets_by_file.values())
-        log.info('Начало проверки внешних ссылок: %d ссылок в %d файлах', total_links, len(targets_by_file))
+        log.info('Starting external link check: %d links in %d files', total_links, len(targets_by_file))
 
         issues: list[ValidationIssue] = []
 
         with requests.Session() as session, ThreadPoolExecutor(max_workers=self.max_threads_number) as executor:
             for file_path, links in targets_by_file.items():
-                log.info('Проверка файла: %s (%d внешних ссылок)', file_path, len(links))
+                log.info('Checking file: %s (%d external links)', file_path, len(links))
                 doc_file = files_to_validate[file_path]
 
                 file_futures = [
@@ -119,7 +136,7 @@ class ExternalLinkValidator(BaseValidator):
                     if issue:
                         issues.append(issue)
 
-                log.info('Проверка завершена: %s', file_path)
+                log.info('Check completed: %s', file_path)
 
-        log.info('Проверка внешних ссылок завершена. Найдено проблем: %d', len(issues))
+        log.info('External link check completed. Issues found: %d', len(issues))
         return issues

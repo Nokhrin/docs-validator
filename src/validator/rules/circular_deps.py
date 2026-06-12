@@ -1,10 +1,3 @@
-"""
-Валидатор циклических зависимостей.
-
-Цикл возникает, когда файл A ссылается на B, B на C, а C снова на A.
-Такие зависимости могут указывать на логические ошибки в структуре документации.
-
-"""
 import logging
 from pathlib import Path
 
@@ -21,8 +14,8 @@ class CircularDependencyValidator(BaseValidator):
             files_to_validate: dict[Path, DocumentationFile],
             root_dir: Path,
     ) -> list[ValidationIssue]:
-        """Возвращает список issues типа CIRCULAR_DEPENDENCY."""
-        log.debug('Начало проверки циклических зависимостей, файлов: %d', len(files_to_validate))
+        """Returns a list of CIRCULAR_DEPENDENCY issues."""
+        log.debug('Starting circular dependency check, total files: %d', len(files_to_validate))
         issues: list[ValidationIssue] = []
 
         dependencies_graph = ConnectivityGraph()
@@ -36,10 +29,8 @@ class CircularDependencyValidator(BaseValidator):
 
         simple_cycles: list[list[Path]] = dependencies_graph.get_simple_cycles()
 
-        # issues
         cycles_processed: set[tuple[Path]] = set()
         for cycle in simple_cycles:
-            log.debug('Удаление дубликатов из цикла')
             cycle_key = tuple(sorted(cycle))
             if cycle_key in cycles_processed:
                 continue
@@ -53,9 +44,8 @@ class CircularDependencyValidator(BaseValidator):
                         issue_type=IssueType.CIRCULAR_DEPENDENCY,
                         severity_level=SeverityLevel.WARNING,
                         src_file=file,
-                        message=f'Файл участвует в циклической зависимости: {cycle_repr}',
-                        suggestion='Разорвите цикл, удалив или перенаправив одну из ссылок',
+                        message=f'File participates in a circular dependency: {cycle_repr}',
+                        suggestion='Break the cycle by removing or redirecting one of the links',
                     ))
-
-        log.debug('Найдено циклов: %d, проблем: %d', len(cycles_processed), len(issues))
+        log.debug('Cycles found: %d, issues: %d', len(cycles_processed), len(issues))
         return issues

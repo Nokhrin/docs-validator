@@ -1,11 +1,10 @@
 """
-CLI валидатора документации.
-
-Ответственность:
-- Парсинг sys.argv и приведение типов
-- Базовая валидация обязательных параметров
-- Вызов единой точки входа приложения
-- Преобразование результата в код выхода (sys.exit())
+Documentation validator CLI.
+Responsibilities:
+- Parsing sys.argv and type casting
+- Basic validation of required parameters
+- Invoking the single application entry point
+- Converting the result to an exit code (sys.exit())
 """
 import argparse
 import logging
@@ -20,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 def create_parser() -> ArgumentParser:
-    """Возвращает парсер."""
+    """Returns the argument parser."""
     parser: ArgumentParser = ArgumentParser(
         prog='docs-validator',
         description='Static analyzer for documentation link integrity',
@@ -127,10 +126,10 @@ def execute_scan(args: argparse.Namespace) -> int:
 
     files, issues, stats, exit_code = run_validation(validation_config)
 
-    # Консольный вывод
+    # Console output
     CLIReporter(stream=sys.stdout).report(files, issues, stats)
 
-    # Файловый вывод
+    # File output
     if validation_config.output_file:
         reporters = {
             'json': JSONReporter(),
@@ -143,8 +142,6 @@ def execute_scan(args: argparse.Namespace) -> int:
 
     return exit_code
 
-    return exit_code
-
 
 def main() -> int:
     parser = create_parser()
@@ -154,7 +151,7 @@ def main() -> int:
         case 'scan':
             return execute_scan(args)
         case _:
-            log.error('Неизвестная команда: %s', args.command)
+            log.error('Unknown command: %s', args.command)
             return 2
 
 

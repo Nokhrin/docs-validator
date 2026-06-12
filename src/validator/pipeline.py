@@ -1,3 +1,4 @@
+"""Execution orchestrator."""
 import logging
 import sys
 from argparse import Namespace
@@ -18,9 +19,8 @@ log = logging.getLogger(__name__)
 
 
 def load_configuration(args: Namespace) -> ValidatorConfig:
-    """Загружает значения параметров конфигурации.
-
-    Приоритет конфигурации: cli, toml, default
+    """Loads configuration parameter values.
+    Priority: cli > toml > default
     """
     config = ValidatorConfig(args.path_to_explore)
 
@@ -37,15 +37,14 @@ def load_configuration(args: Namespace) -> ValidatorConfig:
 
 
 def explore_files(path_to_explore: Path, config: ValidatorConfig) -> dict[Path, DocumentationFile]:
-    """Извлекает метаданные из файлов в директории.
-
-    Рекурсивно от root
+    """Extracts metadata from files in the directory.
+    Recursively from root.
     """
     if not path_to_explore.exists():
-        log.error('Не удалось найти запрошенный путь: %s', path_to_explore)
+        log.error('Requested path not found: %s', path_to_explore)
         return {}
     if not path_to_explore.is_dir():
-        log.error('Запрошенный путь не является каталогом: %s', path_to_explore)
+        log.error('Requested path is not a directory: %s', path_to_explore)
         return {}
 
     explorer = FilesExplorer(
@@ -57,14 +56,12 @@ def explore_files(path_to_explore: Path, config: ValidatorConfig) -> dict[Path, 
 
 
 def collect_links(files: dict[Path, DocumentationFile], root_path: Path) -> dict[Path, DocumentationFile]:
-    """Записывает информацию о ссылках файла.
-
+    """Appends link information for the file.
     Args:
-        files: Словарь файлов (ключи - относительные пути).
-        root_path: Абсолютный или относительный путь к корню сканирования для резолва путей.
-
-    Результат в поле DocumentationFile.out_links
-    Возвращает новый экземпляр списка
+        files: Dictionary of files (keys are relative paths).
+        root_path: Absolute or relative path to the scan root for path resolution.
+    Returns:
+        Updated dictionary of files.
     """
     for file_path, file_obj in files.items():
         try:
@@ -72,7 +69,7 @@ def collect_links(files: dict[Path, DocumentationFile], root_path: Path) -> dict
             file_content = full_path.read_text(encoding='utf-8')
             file_obj.links_out = set(LinkExtractor(file_obj.path).get_links_from_file(file_content))
         except IOError as err:
-            log.error('Не удалось прочитать %s: %s', file_obj.path, err)
+            log.error('Failed to read %s: %s', file_obj.path, err)
             file_obj.links_out = set()
     return files
 
@@ -81,7 +78,7 @@ def collect_issues(files: dict[Path, DocumentationFile], config: ValidatorConfig
     issues: list[ValidationIssue] = []
     if config.is_validate:
         if config.path_to_explore is None:
-            raise ValueError("Не задан path_to_explore. Валидация отменена.")
+            raise ValueError('path_to_explore is not set. Validation aborted.')
 
         validators: list[BaseValidator] = [
             BrokenLinkValidator(), OrphanFileValidator(), AnchorLinkValidator(), CircularDependencyValidator()
@@ -103,7 +100,6 @@ def aggregate_issue_statistics(
         files: dict[Path, DocumentationFile],
         issues: list[ValidationIssue],
 ) -> LinkStatistics:
-    """Возвращает статистику валидации ссылок."""
     broken_links: set[Link] = {i.link for i in issues if i.link is not None}
     internal_total = 0
     internal_broken = 0
@@ -142,11 +138,11 @@ def run_validation(
         config: ValidatorConfig
 ) -> tuple[dict[Path, DocumentationFile], list[ValidationIssue], LinkStatistics, int]:
     if config.path_to_explore is None:
-        log.error('Не указана директория для сканирования')
+        log.error('No directory specified for scanning')
         return {}, [], LinkStatistics(), 1
     path_to_explore = Path(config.path_to_explore)
     if not path_to_explore.exists():
-        log.error('Директория не найдена: %s', path_to_explore)
+        log.error('Directory not found: %s', path_to_explore)
         return {}, [], LinkStatistics(), 1
 
     files: dict[Path, DocumentationFile] = explore_files(path_to_explore, config)

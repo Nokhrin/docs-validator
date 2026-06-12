@@ -1,3 +1,4 @@
+"""Generates a report for console output."""
 import logging
 import sys
 from enum import Enum
@@ -11,22 +12,19 @@ log = logging.getLogger(__name__)
 
 
 class TermColor(Enum):
-    """Цвета текста консоли."""
     RESET = "\033[0m"
     BOLD = "\033[1m"
     RED = "\033[91m"  # ERROR
     YELLOW = "\033[93m"  # WARNING
     BLUE = "\033[94m"  # INFO
-    GREEN = "\033[92m"  # успех
-    GRAY = "\033[90m"  # прочее
+    GREEN = "\033[92m"  # success
+    GRAY = "\033[90m"  # other
 
     def apply(self, text: str) -> str:
         return f'{self.value}{text}{TermColor.RESET.value}'
 
 
 class CLIReporter(BaseReporter):
-    """Генерирует отчет для печати в консоль."""
-
     def __init__(
             self,
             stream: TextIO = sys.stderr,
@@ -41,20 +39,8 @@ class CLIReporter(BaseReporter):
         return text
 
     def _write_line(self, text: str = '') -> None:
-        """Записывает строку в поток с переводом строки."""
         self.stream.write(text + '\n')
         self.stream.flush()
-
-import logging
-import sys
-from enum import Enum
-from pathlib import Path
-from typing import TextIO
-
-from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, SeverityLevel
-from validator.reporters import BaseReporter
-
-log = logging.getLogger(__name__)
 
 
 class TermColor(Enum):
@@ -93,7 +79,7 @@ class CLIReporter(BaseReporter):
             link_stat: LinkStatistics,
     ) -> str:
         if not files:
-            self._write_line("Файлы для проверки не найдены.")
+            self._write_line('No files found for validation.')
             return ''
 
         file_issues: dict[Path, list[ValidationIssue]] = {}
@@ -110,7 +96,7 @@ class CLIReporter(BaseReporter):
             rows.append((str(file_path), errors, warnings, total_links, broken_links))
 
         col_file_width = max((len(r[0]) for r in rows), default=10)
-        col_file_width = max(col_file_width, len("File"))
+        col_file_width = max(col_file_width, len('File'))
 
         lines: list[str] = ['']
         header = f"{'File':<{col_file_width}} {'Errors':>7} {'Warnings':>9} {'Links':>6} {'Broken':>7}"
@@ -127,22 +113,18 @@ class CLIReporter(BaseReporter):
 
         lines.append('-' * len(header))
 
-        # Итог по столбцам
         total_errors = sum(r[1] for r in rows)
         total_warnings = sum(r[2] for r in rows)
         total_links = sum(r[3] for r in rows)
         total_broken = sum(r[4] for r in rows)
 
-        # Итоговая строка
-        summary_label = f"{len(files)}"
-        summary_line = f"{summary_label:<{col_file_width}} {total_errors:>7} {total_warnings:>9} {total_links:>6} {total_broken:>7}"
-        # lines.append('TOTAL'
+        summary_label = f'{len(files)}'
+        summary_line = f'{summary_label:<{col_file_width}} {total_errors:>7} {total_warnings:>9} {total_links:>6} {total_broken:>7}'
         footer = f"TOTAL\n{'Files':<{col_file_width}} {'Errors':>7} {'Warnings':>9} {'Links':>6} {'Broken':>7}"
         lines.append(self._colorize(footer, TermColor.BOLD))
         lines.append(summary_line)
         lines.append('-' * len(header))
 
-        # Сводка
         lines.append(f'Всего проблем: {len(issues)}')
         lines.append(f'Внутренних ссылок: {link_stat.internal_total} (битых: {link_stat.internal_broken})')
         lines.append(f'Внешних ссылок: {link_stat.external_total} (битых: {link_stat.external_broken})')

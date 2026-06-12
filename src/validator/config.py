@@ -1,4 +1,4 @@
-"""Управление конфигурацией валидатора."""
+"""Validator configuration management."""
 import logging
 from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
@@ -27,19 +27,18 @@ class ValidatorConfig:
 
 def load_config_from_toml(config_file: Path) -> ValidatorConfig:
     if not config_file.exists():
-        log.warning('Указанный файл конфигурации не найден: %s\n'
-                    'Создана конфигурация по умолчанию', config_file)
+        log.warning('Specified config file not found: %s. Using default configuration.', config_file)
         return ValidatorConfig()
 
     try:
-        log.debug('Загрузка конфигурации из %s', config_file)
+        log.debug('Loading configuration from %s', config_file)
         with open(config_file, 'rb') as f:
             config_content= load(f)
     except TOMLDecodeError as err:
-        log.error('Ошибка синтаксиса TOML в файле %s: %s', config_file, err)
+        log.error('TOML syntax error in file %s: %s', config_file, err)
         return ValidatorConfig()
     except IOError as err:
-        log.error('Не удалось прочитать файл конфигурации %s: %s', config_file, err)
+        log.error('Failed to read config file %s: %s', config_file, err)
         return ValidatorConfig()
 
     validator_parameters = config_content.get('validator', {})
@@ -58,12 +57,11 @@ def load_config_from_toml(config_file: Path) -> ValidatorConfig:
         report_include_files=validator_parameters.get('report_include_files', False),
     )
 
-    log.debug('Конфигурация загружена: %s', config)
+    log.debug('Configuration loaded: %s', config)
     return config
 
 
 def merge_config(config_init: ValidatorConfig, config_to_merge: ValidatorConfig) -> ValidatorConfig:
-    """Выполняет слияние конфигураций, возвращает новый экземпляр."""
     updates = {
         f.name: getattr(config_to_merge, f.name)
         for f in fields(config_to_merge)
