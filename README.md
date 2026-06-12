@@ -25,7 +25,7 @@ A static analyzer for documentation link integrity in Markdown-based repositorie
 Install `docs-validator` directly into the target project that requires documentation link validation. This ensures seamless integration with the project's CI/CD pipeline and local development environment.
 ```shell
 cd ~/projects/project_to_validate/
-python3.13 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install git+https://github.com/Nokhrin/docs-validator.git
 docs-validator --help

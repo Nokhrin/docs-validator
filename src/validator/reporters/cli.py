@@ -115,13 +115,23 @@ class CLIReporter(BaseReporter):
 
         if issues:
             lines.append('')
-            lines.append(self._colorize('Error Details:', TermColor.BOLD))
-            for issue in issues:
+            lines.append(self._colorize('Issue Details:', TermColor.BOLD))
+
+            sorted_issues = sorted(
+                issues,
+                key=lambda x: (str(x.src_file.path), x.link.line_number if x.link else 0)
+            )
+
+            for issue in sorted_issues:
+                location = f'{issue.src_file.path}:{issue.link.line_number}' if issue.link else str(issue.src_file.path)
+                target = issue.link.uri if issue.link else 'N/A'
+
                 if issue.severity_level == SeverityLevel.ERROR:
-                    location = f'{issue.src_file.path}:{issue.link.line_number}' \
-                        if issue.link else str(issue.src_file.path)
-                    target = issue.link.uri if issue.link else 'N/A'
-                    lines.append(f'  {self._colorize(location, TermColor.YELLOW)} -> {target}')
+                    prefix = self._colorize('[ERROR]', TermColor.RED)
+                else:
+                    prefix = self._colorize('[WARN] ', TermColor.YELLOW)
+
+                lines.append(f'  {prefix} {self._colorize(location, TermColor.YELLOW)} -> {target}')
             lines.append('')
 
         total_errors = sum(r[1] for r in rows)

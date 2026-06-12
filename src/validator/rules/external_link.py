@@ -61,13 +61,22 @@ class ExternalLinkValidator(BaseValidator):
                 resp.close()
 
             if resp.status_code >= 400:
+                is_bot_blocked = resp.status_code in (403, 406, 429)
+                severity = SeverityLevel.WARNING if is_bot_blocked else SeverityLevel.ERROR
+
+                message = (
+                    f'Possible WAF/bot block ({resp.status_code}): {link.uri}'
+                    if is_bot_blocked
+                    else f'External resource unavailable ({resp.status_code}): {link.uri}'
+                )
+
                 return ValidationIssue(
                     issue_type=IssueType.EXTERNAL_UNREACHABLE,
-                    severity_level=SeverityLevel.ERROR,
+                    severity_level=severity,
                     src_file=src_file,
                     link=link,
-                    message=f'External resource unavailable ({resp.status_code}): {link.uri}',
-                    suggestion='Check URL availability or update the link',
+                    message=message,
+                    suggestion='Verify manually or add to hosts_to_ignore' if is_bot_blocked else 'Check URL availability or update the link',
                 )
 
         except RequestException as err:
@@ -107,6 +116,9 @@ class ExternalLinkValidator(BaseValidator):
         issues: list[ValidationIssue] = []
 
         with requests.Session() as session, ThreadPoolExecutor(max_workers=self.max_threads_number) as executor:
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            })
             for file_path, links in targets_by_file.items():
                 log.info('Checking file: %s (%d external links)', file_path, len(links))
                 doc_file = files_to_validate[file_path]
