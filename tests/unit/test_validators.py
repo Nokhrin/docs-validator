@@ -1,11 +1,8 @@
 """Тесты для валидаторов."""
 from pathlib import Path
-from wsgiref.validate import validator
 
-import pytest
-
-from validator.core.models import IssueType, SeverityLevel, DocumentationFile, Link, LinkType
-from validator.rules import AnchorLinkValidator, CircularDependencyValidator
+from validator.core.models import IssueType, SeverityLevel
+from validator.rules import CircularDependencyValidator
 from validator.rules.broken_link import BrokenLinkValidator
 from validator.rules.orphan_file import OrphanFileValidator
 

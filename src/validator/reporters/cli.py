@@ -14,38 +14,6 @@ log = logging.getLogger(__name__)
 class TermColor(Enum):
     RESET = "\033[0m"
     BOLD = "\033[1m"
-    RED = "\033[91m"  # ERROR
-    YELLOW = "\033[93m"  # WARNING
-    BLUE = "\033[94m"  # INFO
-    GREEN = "\033[92m"  # success
-    GRAY = "\033[90m"  # other
-
-    def apply(self, text: str) -> str:
-        return f'{self.value}{text}{TermColor.RESET.value}'
-
-
-class CLIReporter(BaseReporter):
-    def __init__(
-            self,
-            stream: TextIO = sys.stderr,
-            use_color: bool = True,
-    ):
-        self.stream = stream
-        self.use_color = use_color
-
-    def _colorize(self, text: str, color: TermColor) -> str:
-        if self.use_color:
-            return color.apply(text)
-        return text
-
-    def _write_line(self, text: str = '') -> None:
-        self.stream.write(text + '\n')
-        self.stream.flush()
-
-
-class TermColor(Enum):
-    RESET = "\033[0m"
-    BOLD = "\033[1m"
     RED = "\033[91m"
     YELLOW = "\033[93m"
     BLUE = "\033[94m"

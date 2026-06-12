@@ -7,7 +7,7 @@ from validator.core.models import (
 )
 from validator.pipeline import (
     load_configuration, run_validation, collect_issues,
-    aggregate_issue_statistics, collect_links
+    aggregate_issue_statistics
 )
 
 

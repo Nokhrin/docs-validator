@@ -29,7 +29,7 @@ class CircularDependencyValidator(BaseValidator):
 
         simple_cycles: list[list[Path]] = dependencies_graph.get_simple_cycles()
 
-        cycles_processed: set[tuple[Path]] = set()
+        cycles_processed: set[tuple[Path, ...]] = set()
         for cycle in simple_cycles:
             cycle_key = tuple(sorted(cycle))
             if cycle_key in cycles_processed:

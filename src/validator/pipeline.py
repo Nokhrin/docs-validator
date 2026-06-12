@@ -1,17 +1,13 @@
 """Execution orchestrator."""
 import logging
-import sys
 from argparse import Namespace
-from contextlib import contextmanager
 from dataclasses import replace, fields
 from pathlib import Path
-from typing import Callable, Iterator, TextIO
 
 from validator.config import ValidatorConfig, load_config_from_toml, merge_config
 from validator.core.explorer import FilesExplorer
 from validator.core.extractor import LinkExtractor
-from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, LinkType, Link, SeverityLevel
-from validator.reporters import JSONReporter, MarkdownReporter, HTMLReporter
+from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, LinkType, Link
 from validator.rules import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
     CircularDependencyValidator, ExternalLinkValidator, BaseValidator
 

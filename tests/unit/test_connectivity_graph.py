@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from validator.core.models import DocumentationFile, Link, LinkType
 
 
