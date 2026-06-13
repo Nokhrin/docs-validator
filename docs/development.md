@@ -1,9 +1,11 @@
+# Development
 
-## Development - Environment
-### Editable Installation
-For debugging and making changes to the validator code:
+## Environment Setup
+
+### Install Validator (local source)
 ```shell
 cd ~/projects/project_to_validate/
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ../docs-validator[dev]
 ```
@@ -87,6 +89,7 @@ To verify the validator's functionality on a real documentation project (e.g., `
 ### Prerequisites
 - The `docs-validator` project and the tested project (e.g., `project_to_validate`) are cloned into adjacent directories.
 - The tested project has a virtual environment with `docs-validator` installed in editable mode.
+- Interpreter (`.venv`) of project under test is added to PyCharm 
 
 ### Run Configuration for Debugging
 1. Create a new configuration: `Run` -> `Edit Configurations...` -> `+` -> `Python`
@@ -94,11 +97,11 @@ To verify the validator's functionality on a real documentation project (e.g., `
 
    | Parameter             | Value                                                      |
    |-----------------------|------------------------------------------------------------|
-   | Script path           | `path/to/docs-validator/src/validator/cli.py`              |
+   | Python interpreter    | Interpreter from the tested project's `.venv`              |
+   | Script path           | `$ProjectFileDir$/src/validator/cli.py`                    |
    | Module name           | *(leave empty)*                                            |
    | Parameters            | `scan ../project_to_validate --validate --log-level debug` |
-   | Python interpreter    | Interpreter from the tested project's `.venv`              |
-   | Working directory     | `path/to/project_to_validate`                              |
+   | Working directory     | `$ProjectFileDir$/../project_to_validate`                  |
    | Environment variables | `PYTHONDONTWRITEBYTECODE=1;PYTHONUNBUFFERED=1`             |
 
 3. Set breakpoints.

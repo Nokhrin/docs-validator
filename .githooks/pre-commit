@@ -1,4 +1,14 @@
 #!/bin/bash
 set -e
-python -m pytest tests/unit/ tests/integration/ -v --tb=short \
-  --cov=src/validator --cov-report=term --cov-fail-under=70
+
+if ! python3 -c "import pytest, pytest_cov" 2>/dev/null; then
+    echo "Error: pytest and pytest-cov are required. Install with: pip install -e '.[dev]'" >&2
+    exit 1
+fi
+
+python3 -m pytest -vv --tb=short \
+    --cov=src/validator \
+    --cov-report=term \
+    --cov-report=xml \
+    --cov-fail-under=70 \
+    tests/

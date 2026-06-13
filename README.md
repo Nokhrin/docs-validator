@@ -91,4 +91,24 @@ docs-validator scan ./docs --skip-external
 
 ---
 
+### Local Validation via pre-commit Hook
+
+> Note: The hook requires dependencies from `[dev]` extras. Install them with:
+> ```shell
+> pip install -e ".[dev]"
+> ```
+
+Create the hook file `.githooks/pre-commit`
+[Example](.githooks/pre-commit)
+
+```shell
+# setup
+chmod +x .githooks/pre-commit
+git config core.hooksPath .githooks
+# verify
+bash .githooks/pre-commit
+```
+
+---
+
 [![Unit Tests](https://github.com/Nokhrin/docs-validator/actions/workflows/test.yml/badge.svg)](https://github.com/Nokhrin/docs-validator/actions/workflows/test.yml)
