@@ -1,7 +1,3 @@
-"""
-Генераторы отчетов валидации.
-"""
-
 from validator.reporters.base import BaseReporter
 from validator.reporters.cli import CLIReporter
 from validator.reporters.html import HTMLReporter

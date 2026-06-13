@@ -1,6 +1,5 @@
 from argparse import Namespace
 from pathlib import Path
-from unittest.mock import MagicMock
 
 from validator.cli import create_parser, execute_scan, main
 
@@ -13,24 +12,23 @@ class TestCli:
         mock_md_reporter = mocker.patch('validator.cli.MarkdownReporter')
         mock_write = mocker.patch('validator.cli.Path.write_text')
 
-        mock_config = MagicMock(
-            output_file=MagicMock(),
+        mock_config = mocker.MagicMock(
+            output_file=mocker.MagicMock(),
             log_level='WARNING',
             report_format='markdown',
             report_include_files=False
         )
         mock_load.return_value = mock_config
 
-        # Новая сигнатура: (files, issues, stats, exit_code)
         mock_files = {}
         mock_issues = []
-        mock_stats = MagicMock()
+        mock_stats = mocker.MagicMock()
         mock_run.return_value = (mock_files, mock_issues, mock_stats, 0)
 
-        mock_cli_instance = MagicMock()
+        mock_cli_instance = mocker.MagicMock()
         mock_cli_reporter.return_value = mock_cli_instance
 
-        mock_md_instance = MagicMock()
+        mock_md_instance = mocker.MagicMock()
         mock_md_reporter.return_value = mock_md_instance
         mock_md_instance.report.return_value = 'mock_file_report'
 
@@ -39,11 +37,9 @@ class TestCli:
         mock_load.assert_called_once()
         mock_run.assert_called_once_with(mock_config)
 
-        # Проверка консольного вывода
         mock_cli_reporter.assert_called_once()
         mock_cli_instance.report.assert_called_once_with(mock_files, mock_issues, mock_stats)
 
-        # Проверка файлового вывода
         mock_md_reporter.assert_called_once_with(include_files=False)
         mock_md_instance.report.assert_called_once_with(mock_files, mock_issues, mock_stats)
         mock_write.assert_called_once_with('mock_file_report', encoding='utf-8')

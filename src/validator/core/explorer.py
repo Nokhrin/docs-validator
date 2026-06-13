@@ -1,4 +1,4 @@
-"""Поиск файлов документации."""
+"""Documentation files discovery."""
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -17,7 +17,7 @@ DEFAULT_EXCLUDES = {
 
 
 class FilesExplorer:
-    """Рекурсивный поиск по имени файла с учетом исключений."""
+    """Recursive file discovery with exclusion patterns."""
 
     def __init__(
             self,
@@ -33,10 +33,10 @@ class FilesExplorer:
 
     @staticmethod
     def _get_title(file_path: Path):
-        """Возвращает заголовок документа.
-        Условия "заголовка":
-            - расположение в строке с индексом 0
-            - первый символ '# '
+        """Returns the document title.
+        A "title" is defined as:
+            - Located on the first line (index 0)
+            - Starts with '# '
         """
         try:
             content: str = file_path.read_text(encoding='utf-8')
@@ -44,11 +44,10 @@ class FilesExplorer:
             if first_line.startswith('# '):
                 return first_line[2:].strip()
         except OSError as err:
-            log.debug("Не удалось извлечь заголовок из %s: %s", file_path, err)
+            log.error('Failed to extract title from %s: %s', file_path, err)
         return None
 
     def _create_file_to_validate(self, file_path: Path) -> DocumentationFile:
-        """Создает проверяемый файл."""
         relative_path: Path = file_path.relative_to(self.root_path)
         title = self._get_title(file_path) or str(relative_path)
 
@@ -59,7 +58,6 @@ class FilesExplorer:
         )
 
     def _is_excluded(self, file_name: str) -> bool:
-        """Признак исключения из проверки."""
         if file_name in self.patterns_exclude:
             return True
         for pattern in self.patterns_exclude:
@@ -68,7 +66,6 @@ class FilesExplorer:
         return False
 
     def _walk_skip_ignored(self) -> Iterator[Path]:
-        """Возвращает генератор обхода дерева каталогов с учетом исключений."""
         for root, dirs, files in self.root_path.walk():
             dirs[:] = [d for d in dirs if not self._is_excluded(d)]
 
@@ -77,7 +74,6 @@ class FilesExplorer:
                     yield root / file_name
 
     def find_files(self) -> Iterator[DocumentationFile]:
-        """Возвращает генератор файлов требующих проверки."""
         for file_path in self._walk_skip_ignored():
             if file_path.suffix.lower() in self.extensions_include:
                 yield self._create_file_to_validate(file_path=file_path)

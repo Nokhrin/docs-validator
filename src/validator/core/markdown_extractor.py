@@ -2,10 +2,11 @@ import re
 from pathlib import Path
 from typing import Iterator
 
+from validator.core.base_extractor import BaseLinkExtractor
 from validator.core.models import Link, LinkType
 
 
-class LinkExtractor:
+class LinkExtractor(BaseLinkExtractor):
     r"""
     Regex pattern for parsing Markdown inline links and images.
     Supports one level nested parentheses in URLs (e.g., Wikipedia links like `.../Page_(disambiguation)`).
@@ -27,9 +28,6 @@ class LinkExtractor:
         r'(!?)\[(.*?)]\(([^()]+(?:\([^()]*\)[^()]*)*)\)',
         re.MULTILINE
     )
-
-    def __init__(self, source_file: Path):
-        self.source_file = source_file
 
     def get_links_from_file(self, file_content: str) -> Iterator[Link]:
         for line_number, line_content in enumerate(file_content.split('\n'), start=1):

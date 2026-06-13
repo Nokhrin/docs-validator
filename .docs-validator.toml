@@ -10,5 +10,5 @@ hosts_to_ignore = ["localhost", "127.0.0.1"]
 is_skip_external = true
 report_include_files = true
 validate_external_anchors = false
-external_parsing_timeout_sec = 10
-external_parsing_user_agent = "'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'"
+external_anchor_timeout_sec = 10
+external_anchor_user_agent = "'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'"

@@ -40,6 +40,19 @@ class CLIReporter(BaseReporter):
         self.stream.write(text + '\n')
         self.stream.flush()
 
+    def _format_issue_line(self, issue: ValidationIssue) -> str:
+        location = f'{issue.src_file.path}:{issue.link.line_number}' if issue.link else str(issue.src_file.path)
+        colored_location = self._colorize(location, TermColor.YELLOW)
+
+        if issue.severity_level == SeverityLevel.ERROR:
+            prefix = self._colorize('[ERROR]', TermColor.RED)
+        else:
+            prefix = self._colorize('[WARN] ', TermColor.YELLOW)
+
+        if issue.link:
+            return f'  {prefix} {colored_location} -> {issue.link.uri}'
+        return f'  {prefix} {colored_location}: {issue.message}'
+
     def report(
             self,
             files: dict[Path, DocumentationFile],
@@ -91,15 +104,7 @@ class CLIReporter(BaseReporter):
             )
 
             for issue in sorted_issues:
-                location = f'{issue.src_file.path}:{issue.link.line_number}' if issue.link else str(issue.src_file.path)
-                target = issue.link.uri if issue.link else 'N/A'
-
-                if issue.severity_level == SeverityLevel.ERROR:
-                    prefix = self._colorize('[ERROR]', TermColor.RED)
-                else:
-                    prefix = self._colorize('[WARN] ', TermColor.YELLOW)
-
-                lines.append(f'  {prefix} {self._colorize(location, TermColor.YELLOW)} -> {target}')
+                lines.append(self._format_issue_line(issue))
             lines.append('')
 
         total_errors = sum(r[1] for r in rows)
@@ -124,9 +129,7 @@ class CLIReporter(BaseReporter):
             lines.append('')
             lines.append(self._colorize('Error Summary:', TermColor.BOLD))
             for issue in error_issues:
-                location = f'{issue.src_file.path}:{issue.link.line_number}' if issue.link else str(issue.src_file.path)
-                target = issue.link.uri if issue.link else 'N/A'
-                lines.append(f'  {self._colorize("[ERROR]", TermColor.RED)} {self._colorize(location, TermColor.YELLOW)} -> {target}')
+                lines.append(self._format_issue_line(issue))
             lines.append('')
 
         for line in lines:

@@ -1,11 +1,4 @@
-"""Модели данных для статического анализа документации.
-
-Ключевые сущности:
-    Link: Атомарная ссылка с метаданными (неизменяемая).
-    FileToValidate: Файл с входящими/исходящими ссылками (изменяемый).
-    ValidationIssue: Описание проблемы (битая ссылка, сирота и т.д.).
-    ValidationResult: Агрегированный отчет проверки.
-"""
+"""Data models."""
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
@@ -14,53 +7,50 @@ from typing import Optional
 
 
 class LinkType(Enum):
-    """Тип ссылки.
+    """Link type.
     Values:
-        INTERNAL: Относительный путь к файлу
-        EXTERNAL: Веб-адрес или почта
-        ANCHOR: Якорь раздела
-        IMAGE: Ссылка на изображение
+        INTERNAL: Relative path to a file
+        EXTERNAL: Web address or email
+        ANCHOR: Section anchor
+        IMAGE: Image link
     """
     INTERNAL = auto()
     EXTERNAL = auto()
     ANCHOR = auto()
     IMAGE = auto()
 
+
 class SeverityLevel(Enum):
-    """Уровень критичности.
-    Values:
-        ERROR: Критическая ошибка валидации
-        WARNING: Предупреждение, не блокирующее
-        INFO: Информационное сообщение
-    """
-    ERROR = "error"
-    WARNING = "warning"
-    INFO = "info"
+    ERROR = 'error'
+    WARNING = 'warning'
+    INFO = 'info'
+
 
 class IssueType(Enum):
-    """Тип проблемы валидации.
+    """Validation issue type.
     Values:
-        BROKEN_LINK: Ссылка на несуществующий файл
-        MISSING_ANCHOR: Якорь не найден
-        ORPHAN_FILE: Файл без входящих ссылок
-        CIRCULAR_DEPENDENCY: Циклическая зависимость файлов
-        EXTERNAL_UNREACHABLE: Внешний ресурс недоступен
+        BROKEN_LINK: Link to a non-existent file
+        MISSING_ANCHOR: Anchor not found
+        ORPHAN_FILE: File with no incoming links
+        CIRCULAR_DEPENDENCY: Circular dependency between files
+        EXTERNAL_UNREACHABLE: External resource is unreachable
     """
-    BROKEN_LINK = "broken_link"
-    MISSING_ANCHOR = "missing_anchor"
-    ORPHAN_FILE = "orphan_file"
-    CIRCULAR_DEPENDENCY = "circular"
-    EXTERNAL_UNREACHABLE = "external_404"
+    BROKEN_LINK = 'broken_link'
+    MISSING_ANCHOR = 'missing_anchor'
+    ORPHAN_FILE = 'orphan_file'
+    CIRCULAR_DEPENDENCY = 'circular'
+    EXTERNAL_UNREACHABLE = 'external_404'
+
 
 @dataclass(frozen=True)
 class Link:
-    """Ссылка, извлеченная из документации.
+    """An atomic link with metadata (immutable).
     Args:
-        uri: URI строка ссылки
-        link_type: Тип ссылки (INTERNAL/EXTERNAL/ANCHOR/IMAGE)
-        parent_file: Файл-источник ссылки
-        line_number: Номер строки в файле
-        anchor: Якорь раздела (опционально)
+        uri: URI string of the link
+        link_type: Link type (INTERNAL/EXTERNAL/ANCHOR/IMAGE)
+        parent_file: Source file containing the link
+        line_number: Line number in the file
+        anchor: Section anchor (optional)
     """
     uri: str
     link_type: LinkType
@@ -70,41 +60,30 @@ class Link:
 
     @property
     def is_internal(self) -> bool:
-        """Внутренняя ссылка.
-        Returns:
-            True если относительный путь к файлу
-        """
         return self.link_type is LinkType.INTERNAL
 
     @property
     def is_external(self) -> bool:
-        """Внешняя ссылка.
-        Returns:
-            True если веб-адрес или почта
-        """
         return self.link_type is LinkType.EXTERNAL
 
     @property
     def target_file(self) -> Path | None:
-        """Относительный путь к целевому файлу.
-        Returns:
-            Path к файлу или None
-        """
         if self.is_internal:
             if self.uri:
                 return Path(self.uri.split('#')[0])
         return None
 
+
 @dataclass
 class DocumentationFile:
-    """Файл, в котором проверяются ссылки.
+    """A file with incoming/outgoing links (mutable).
     Args:
-        path: Относительный путь к файлу
-        title: Заголовок документа
-        links_out: Исходящие ссылки из файла
-        links_in: Входящие ссылки в файл
-        word_count: Количество слов в файле
-        last_modified: Дата последнего изменения
+        path: Relative path to the file
+        title: Document title
+        links_out: Outgoing links from the file
+        links_in: Incoming links to the file
+        word_count: Number of words in the file
+        last_modified: Date of last modification
     """
     path: Path
     title: str
@@ -115,22 +94,19 @@ class DocumentationFile:
 
     @property
     def is_orphan(self) -> bool:
-        """Не содержит входящих ссылок.
-        Returns:
-            True если links_in пуст
-        """
         return len(self.links_in) == 0
+
 
 @dataclass
 class ValidationIssue:
-    """Проблема, обнаруженная при проверке.
+    """A description of a problem (broken link, orphan file, etc.).
     Args:
-        issue_type: Тип проблемы валидации
-        severity_level: Уровень критичности (ERROR/WARNING/INFO)
-        src_file: Файл-источник проблемы
-        link: Связанная ссылка (опционально)
-        message: Текст сообщения об ошибке
-        suggestion: Рекомендация по исправлению
+        issue_type: Validation issue type
+        severity_level: Severity level (ERROR/WARNING/INFO)
+        src_file: Source file where the issue was found
+        link: Associated link (optional)
+        message: Error message text
+        suggestion: Recommendation for fixing the issue
     """
     issue_type: IssueType
     severity_level: SeverityLevel
@@ -139,30 +115,23 @@ class ValidationIssue:
     message: str = ''
     suggestion: str | None = None
 
+
 @dataclass
 class ValidationResult:
-    """Результат проверки.
+    """An aggregated validation report.
     Args:
-        files_processed: Словарь обработанных файлов
-        issues: Список найденных проблем
+        files_processed: Dictionary of processed files
+        issues: List of detected issues
     """
     files_processed: dict[Path, DocumentationFile]
     issues: list[ValidationIssue]
 
     @property
     def has_errors(self) -> bool:
-        """Наличие ERROR в результатах проверки.
-        Returns:
-            True если есть ERROR issues
-        """
         return any(issue.severity_level == SeverityLevel.ERROR for issue in self.issues)
 
     @property
     def is_valid(self) -> bool:
-        """Не проходит проверку, если результат содержит ERROR.
-        Returns:
-            True если нет ERROR issues
-        """
         return not self.has_errors
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from validator.config import ValidatorConfig, load_config_from_toml, merge_config
 from validator.core.explorer import FilesExplorer
-from validator.core.extractor import LinkExtractor
+from validator.core.extractor_factory import get_extractor
 from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, LinkType, Link
 from validator.rules import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
     CircularDependencyValidator, ExternalLinkValidator, BaseValidator
@@ -64,7 +64,7 @@ def collect_links(files: dict[Path, DocumentationFile], root_path: Path) -> dict
         try:
             full_path = root_path / file_path
             file_content = full_path.read_text(encoding='utf-8')
-            file_obj.links_out = set(LinkExtractor(file_obj.path).get_links_from_file(file_content))
+            file_obj.links_out = set(get_extractor(file_obj.path).get_links_from_file(file_content))
         except IOError as err:
             log.error('Failed to read %s: %s', file_obj.path, err)
             file_obj.links_out = set()

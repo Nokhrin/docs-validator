@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from validator.core.extractor import LinkExtractor
+from validator.core.markdown_extractor import LinkExtractor
 from validator.core.models import LinkType
 
 

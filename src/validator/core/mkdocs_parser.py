@@ -6,27 +6,27 @@ from yaml import safe_load, YAMLError
 log = logging.getLogger(__name__)
 
 def get_nav_roots(mkdocs_yml_path: Path) -> set[Path]:
-    """Возвращает множество путей файлов, указанных в меню навигации."""
+    """Returns a set of file paths listed in the navigation menu."""
     nav_files: set[Path] = set()
 
     if not mkdocs_yml_path.exists():
-        log.debug('mkdocs.yml не найден: %s', mkdocs_yml_path)
+        log.debug('mkdocs.yml not found: %s', mkdocs_yml_path)
         return nav_files
 
     try:
         with open(mkdocs_yml_path, 'r', encoding='utf-8') as f:
             config = safe_load(f)
     except YAMLError as err:
-        log.warning('Не удалось прочитать mkdocs.yml: %s', err)
+        log.error('Failed to read mkdocs.yml: %s', err)
         return nav_files
 
     nav_section = config.get('nav') if isinstance(config, dict) else None
     if not nav_section:
-        log.debug('Секция nav не найдена в %s', mkdocs_yml_path)
+        log.debug('Navigation section not found in %s', mkdocs_yml_path)
         return nav_files
 
     def _walk_nav(node) -> None:
-        """Рекурсивный обход структуры навигации."""
+        """Recursively walks the navigation structure."""
         if isinstance(node, str):
             p = Path(node)
             if not p.suffix:
@@ -40,5 +40,5 @@ def get_nav_roots(mkdocs_yml_path: Path) -> set[Path]:
                 _walk_nav(item)
 
     _walk_nav(nav_section)
-    log.debug('Извлечено %d путей из mkdocs.yml: %s', len(nav_files), nav_files)
+    log.debug('Extracted %d paths from mkdocs.yml: %s', len(nav_files), nav_files)
     return nav_files

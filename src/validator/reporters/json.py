@@ -1,36 +1,27 @@
+import json
+from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics
+from validator.core.models import Link, LinkType
 from validator.reporters import BaseReporter
 
 
 class JSONReporter(BaseReporter):
-    """Генерирует отчет в формате JSON."""
-
     def report(
             self,
             files: dict[Path, DocumentationFile],
             issues: list[ValidationIssue],
             link_stat: LinkStatistics,
     ) -> str:
-        """Возвращает JSON строку.
-        Работает с DocumentationFile
-        """
+        """Return report as JSON string."""
         files_list: list[DocumentationFile] = list(files.values())
         return files_to_json(files_list, include_content=False)
 
-"""Сериализация объектов валидатора в JSON-формат."""
-
-import json
-from datetime import datetime
-from pathlib import Path
-from typing import Any
-
-from validator.core.models import DocumentationFile, Link, LinkType
-
 
 class DataclassEncoder(json.JSONEncoder):
-    """Кастомный JSON-encoder для объектов валидатора."""
+    """Custom JSON encoder for validator objects."""
 
     def default(self, obj: Any) -> Any:
         match obj:
@@ -46,15 +37,11 @@ class DataclassEncoder(json.JSONEncoder):
                 return super().default(obj)
 
 
-def file_to_dict(file: DocumentationFile, include_content: bool = False) -> dict:
-    """Преобразует FileToValidate в dict для JSON-сериализации.
-
-    Args:
-        file: Объект FileToValidate.
-        include_content: Включить содержимое файла (по умолчанию False).
+def file_to_dict(file: DocumentationFile, include_content: bool = False) -> dict[str, Any]:
+    """Converts DocumentationFile to dict for JSON serialization.
 
     Returns:
-        Dict, готовый к json.dumps().
+        Dict ready for json.dumps().
     """
     result = {
         'path': str(file.path),
@@ -75,8 +62,12 @@ def file_to_dict(file: DocumentationFile, include_content: bool = False) -> dict
     return result
 
 
-def link_to_dict(link: Link) -> dict:
-    """Преобразует Link в dict для JSON-сериализации."""
+def link_to_dict(link: Link) -> dict[str, Any]:
+    """Converts Link to dict for JSON serialization.
+
+    Returns:
+        Dict ready for json.dumps().
+    """
     return {
         'uri': link.uri,
         'link_type': link.link_type.name,
@@ -87,19 +78,10 @@ def link_to_dict(link: Link) -> dict:
 
 
 def files_to_json(
-    files: list[DocumentationFile],
-    include_content: bool = False,
-    indent: int = 2,
+        files: list[DocumentationFile],
+        include_content: bool = False,
+        indent: int = 2,
 ) -> str:
-    """Сериализует список файлов в JSON-строку.
-
-    Args:
-        files: Список FileToValidate.
-        include_content: Включить содержимое файлов.
-        indent: Отступ для форматирования JSON.
-
-    Returns:
-        JSON-строка.
-    """
+    """Return Files list as JSON string."""
     data = [file_to_dict(f, include_content) for f in files]
     return json.dumps(data, indent=indent, ensure_ascii=False, cls=DataclassEncoder)

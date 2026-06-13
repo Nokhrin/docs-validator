@@ -1,4 +1,3 @@
-"""Граф связности документов."""
 import logging
 from functools import cached_property
 from pathlib import Path
@@ -16,35 +15,36 @@ DEFAULT_ROOT_FILES = {
 
 
 class ConnectivityGraph:
-    """Направленный граф: файл -> ссылка -> файл"""
+    """Directed graph representing document connectivity: file -> link -> file."""
 
     def __init__(self):
-        """
-        Файл: физический файл -> экземпляр файла для валидации
-        """
+        """Initialize the graph structure and file mapping."""
         self._graph = nx.DiGraph()
         self._files: dict[Path, DocumentationFile] = {}
 
     def add_file(self, file_to_validate: DocumentationFile) -> None:
-        """Добавляет файл как узел графа.
-        Узел - физический файл, атрибут узла title: заголовок в файле
-        G.add_node(Path('/tmp/filename'), title='header')
+        """Add a documentation file as a node in the graph.
+
+        The node is represented by the physical file path.
+        The document's title is stored as a node attribute.
+        Example: G.add_node(Path('/tmp/filename'), title='header')
         """
         self._files[file_to_validate.path] = file_to_validate
         self._graph.add_node(file_to_validate.path, title=file_to_validate.title)
 
     def add_link(self, link: Link) -> None:
-        """Добавляет ссылку как направленное ребро графа.
+        """Add a link as a directed edge in the graph.
 
         Args:
-            link: Объект Link с метаданными.
+            link: Link object containing metadata.
 
         Note:
-            Внешние ссылки (http://, https://, mailto:) не добавляются в граф
+            External links (http://, https://, mailto:) are ignored and not added to the graph.
 
+        Example of resulting AdjacencyView:
         AdjacencyView({
-        PosixPath('/tmp/file_home'): {PosixPath('/tmp/file_target'): {}},
-        PosixPath('/tmp/file_target'): {PosixPath('/tmp/file_home'): {}}
+            PosixPath('/tmp/file_home'): {PosixPath('/tmp/file_target'): {}},
+            PosixPath('/tmp/file_target'): {PosixPath('/tmp/file_home'): {}}
         })
         """
         if link.is_internal:
@@ -57,8 +57,10 @@ class ConnectivityGraph:
             )
 
     def get_orphans(self, exclude_filenames: set[str] | None = None) -> Iterator[Path]:
-        """Возвращает файлы без входящих ссылок.
-        Генератор.
+        """Yield files that have no incoming links (orphan files).
+
+        Yields:
+            Path objects representing orphan files.
         """
         excludes = exclude_filenames if exclude_filenames else DEFAULT_ROOT_FILES
         for node in self._graph.nodes():
@@ -68,14 +70,19 @@ class ConnectivityGraph:
                     yield node_path
 
     def get_unreachable(self, start: Path) -> Iterator[Path]:
-        """Возвращает файлы существующие, но недоступные при обходе от start.
-        Генератор.
-        Включает стартовый узел как достижимый
+        """Yield existing files that are unreachable when traversing from the start node.
 
-        nx.descendants(G, Path('/tmp/file_home'))
-        {PosixPath('/tmp/file_target')}
-        nx.descendants(G, Path('/tmp/file_target'))
-        {PosixPath('/tmp/file_home')}
+        The start node itself is considered reachable.
+
+        Yields:
+            Path objects representing unreachable files.
+
+        Example:
+            nx.descendants(G, Path('/tmp/file_home'))
+            {PosixPath('/tmp/file_target')}
+
+            nx.descendants(G, Path('/tmp/file_target'))
+            {PosixPath('/tmp/file_home')}
         """
         reachable = {start}
         reachable.update(nx.descendants(self._graph, start))
@@ -84,9 +91,6 @@ class ConnectivityGraph:
                 yield cast(Path, node)
 
     def get_simple_cycles(self) -> list[list[Path]]:
-        """Возвращает простые циклы графа.
-        Генератор
-        """
         cycles = []
         try:
             cycles = list(nx.simple_cycles(self._graph))
@@ -96,15 +100,15 @@ class ConnectivityGraph:
 
     @property
     def node_count(self) -> int:
-        """Количество файлов."""
+        """Return the total number of files (nodes) in the graph."""
         return self._graph.number_of_nodes()
 
     @property
     def edge_count(self) -> int:
-        """Количество ссылок."""
+        """Return the total number of links (edges) in the graph."""
         return self._graph.number_of_edges()
 
     @cached_property
     def orphan_files(self) -> set[Path]:
-        """Файлы, не содержащие входящих ссылок."""
+        """Return a cached set of files that have no incoming links."""
         return set(self.get_orphans())
