@@ -51,12 +51,12 @@ class AnchorLinkValidator(BaseValidator):
             log.debug('Unreadable file %s is treated as having not anchor', file_path)
             return False
 
-        anchor_norm = anchor.lower().strip().replace('-', ' ').replace('_', ' ')
+        anchor_norm = AnchorLinkValidator.get_normalized_anchor(anchor)
         header_pattern = re.compile(r'^(#{1,6})\s+(.+)$', re.MULTILINE)
         matches = header_pattern.findall(content)
 
         for _, header_text in matches:
-            header_norm = header_text.lower().strip().replace('-', ' ').replace('_', ' ')
+            header_norm = AnchorLinkValidator.get_normalized_anchor(header_text)
             if header_norm == anchor_norm:
                 log.debug('Anchor target %s found', header_norm)
                 return True
@@ -74,17 +74,17 @@ class AnchorLinkValidator(BaseValidator):
 
         for header_match in self.MARKDOWN_HEADER_PATTERN.finditer(content):
             header_text = header_match.group(2).strip()
-            header_anchor = self._get_anchor_from_header(header_text)
+            header_anchor = self.get_normalized_anchor(header_text)
             anchors.add(header_anchor)
 
         return anchors
 
     @staticmethod
-    def _get_anchor_from_header(header_text: str) -> str:
+    def get_normalized_anchor(content: str) -> str:
         """Returns the heading in anchor link format.
         Reproduces the result of a markdown processor.
         """
-        anchor = header_text.lower()
+        anchor = content.lower()
         anchor = re.sub(r'[\s\t]+', '-', anchor)  # spaces, tabs -> hyphens
         anchor = re.sub(r'-+', '-', anchor)  # remove duplicate hyphens
         anchor = re.sub(r'[^a-z0-9-_]', '', anchor)  # keep 'a-z0-9-_'

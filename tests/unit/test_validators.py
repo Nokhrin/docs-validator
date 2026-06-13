@@ -1,4 +1,3 @@
-"""Тесты для валидаторов."""
 from pathlib import Path
 
 from validator.core.models import IssueType, SeverityLevel
@@ -39,7 +38,6 @@ class TestOrphanFileValidator:
         assert len(orphan_issues) == 0
 
     def test_multiple_orphans(self, one_root_two_orphans, tmp_path: Path):
-        """Несколько файлов-сирот."""
         validator = OrphanFileValidator()
         issues = validator.validate(one_root_two_orphans, tmp_path)
         orphan_issues = [i for i in issues if i.issue_type == IssueType.ORPHAN_FILE]
@@ -50,14 +48,12 @@ class TestOrphanFileValidator:
 
 class TestCircularDependencyValidator:
     def test_no_cycle_no_issues(self, three_files_no_cycles, tmp_path: Path):
-        """Линейная цепочка без циклов не генерирует issues."""
         cdv = CircularDependencyValidator()
         issues = cdv.validate(three_files_no_cycles, tmp_path)
 
         assert len(issues) == 0
 
     def test_simple_cycle_detected(self, two_files_circular_dep, tmp_path: Path):
-        """Простой цикл A->B->A обнаруживается."""
         cdv= CircularDependencyValidator()
         issues = cdv.validate(two_files_circular_dep, tmp_path)
 

@@ -24,7 +24,7 @@ class LinkExtractor:
     \)                            - Literal closing parenthesis for the URL.
     """
     MARKDOWN_LINK_PATTERN = re.compile(
-        r'(!?)\[(.*?)\]\(([^()]+(?:\([^()]*\)[^()]*)*)\)',
+        r'(!?)\[(.*?)]\(([^()]+(?:\([^()]*\)[^()]*)*)\)',
         re.MULTILINE
     )
 

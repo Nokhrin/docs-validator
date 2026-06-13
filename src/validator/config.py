@@ -7,9 +7,6 @@ from typing import Optional
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CONFIG_FILENAME = '.docs-validator.toml'
-
-
 @dataclass
 class ValidatorConfig:
     path_to_explore: Optional[Path] = None
@@ -24,6 +21,9 @@ class ValidatorConfig:
     hosts_to_ignore: list[str] = field(default_factory=list)
     is_skip_external: bool = False
     report_include_files: bool = False
+    validate_external_anchors: bool = False
+    external_anchor_timeout_sec: int = 10
+    external_anchor_user_agent: str = "'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'"
 
 def load_config_from_toml(config_file: Path) -> ValidatorConfig:
     if not config_file.exists():

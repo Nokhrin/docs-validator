@@ -10,6 +10,7 @@ from validator.core.extractor import LinkExtractor
 from validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics, LinkType, Link
 from validator.rules import BrokenLinkValidator, OrphanFileValidator, AnchorLinkValidator, \
     CircularDependencyValidator, ExternalLinkValidator, BaseValidator
+from validator.rules.external_anchor import ExternalAnchorValidator
 
 log = logging.getLogger(__name__)
 
@@ -85,6 +86,12 @@ def collect_issues(files: dict[Path, DocumentationFile], config: ValidatorConfig
                 max_threads_number=config.max_threads_number,
                 hosts_to_ignore=config.hosts_to_ignore,
             ))
+
+            if config.validate_external_anchors:
+                validators.append(ExternalAnchorValidator(
+                    timeout_sec=config.external_anchor_timeout_sec,
+                    user_agent=config.external_anchor_user_agent,
+                ))
 
         for validator in validators:
             new_issues = validator.validate(files, config.path_to_explore)

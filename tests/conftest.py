@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 from validator.cli import create_parser
-from validator.config import DEFAULT_CONFIG_FILENAME
 from validator.core.connectivity_graph import ConnectivityGraph
 from validator.core.models import DocumentationFile, Link, LinkType
 
@@ -19,7 +18,7 @@ def parser():
 @pytest.fixture
 def markdown_link_pattern():
     return re.compile(
-        r'(!?)\[(.*?)\]\(([^()]+(?:\([^()]*\)[^()]*)*)\)',
+        r'(!?)\[(.*?)]\(([^()]+(?:\([^()]*\)[^()]*)*)\)',
         re.MULTILINE
     )
 
@@ -199,7 +198,7 @@ def two_files_circular_dep(tmp_path: Path):
 
 @pytest.fixture
 def config_toml(tmp_path: Path):
-    config_file = tmp_path / DEFAULT_CONFIG_FILENAME
+    config_file = tmp_path / '.docs-validator.toml'
     config_file.write_text(f"""
     [validator]
     path_to_explore = "{tmp_path.resolve()}/docs"
