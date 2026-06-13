@@ -7,7 +7,7 @@ from typing import Iterator
 from validator.core.models import DocumentationFile
 
 log = logging.getLogger(__name__)
-DEFAULT_EXTENSIONS = {'.md', '.markdown'}
+DEFAULT_EXTENSIONS = {'.md', '.markdown', '.asc', '.adoc', '.asciidoc'}
 DEFAULT_EXCLUDES = {
     '.git', '.svn', '.hg',
     '__pycache__', '.pytest_cache', '.mypy_cache',

@@ -87,11 +87,11 @@ def collect_issues(files: dict[Path, DocumentationFile], config: ValidatorConfig
                 hosts_to_ignore=config.hosts_to_ignore,
             ))
 
-            if config.validate_external_anchors:
-                validators.append(ExternalAnchorValidator(
-                    timeout_sec=config.external_anchor_timeout_sec,
-                    user_agent=config.external_anchor_user_agent,
-                ))
+        if config.validate_external_anchors:
+            validators.append(ExternalAnchorValidator(
+                timeout_sec=config.external_anchor_timeout_sec,
+                user_agent=config.external_anchor_user_agent,
+            ))
 
         for validator in validators:
             new_issues = validator.validate(files, config.path_to_explore)

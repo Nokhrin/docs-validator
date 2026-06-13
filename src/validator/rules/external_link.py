@@ -60,7 +60,10 @@ class ExternalLinkValidator(BaseValidator):
                 resp.close()
 
             if resp.status_code >= 400:
-                is_bot_blocked = resp.status_code in (403, 406, 429)
+                is_bot_blocked = resp.status_code in (
+                    403, 406, 429,
+                    503, 520, 521, 522, 523, 524, 525,
+                )
                 severity = SeverityLevel.WARNING if is_bot_blocked else SeverityLevel.ERROR
 
                 message = (

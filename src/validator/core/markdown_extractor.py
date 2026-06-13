@@ -1,9 +1,11 @@
+import logging
 import re
-from pathlib import Path
 from typing import Iterator
 
 from validator.core.base_extractor import BaseLinkExtractor
 from validator.core.models import Link, LinkType
+
+log = logging.getLogger(__name__)
 
 
 class LinkExtractor(BaseLinkExtractor):
@@ -11,7 +13,6 @@ class LinkExtractor(BaseLinkExtractor):
     Regex pattern for parsing Markdown inline links and images.
     Supports one level nested parentheses in URLs (e.g., Wikipedia links like `.../Page_(disambiguation)`).
 
-    Breakdown:
     (!?)                          - Group 1: Optional '!' to indicate an image link.
     \[(.*?)\]                     - Group 2: Link text or image alt text inside square brackets (non-greedy).
     \(                            - Literal opening parenthesis for the URL.
@@ -25,7 +26,8 @@ class LinkExtractor(BaseLinkExtractor):
     \)                            - Literal closing parenthesis for the URL.
     """
     MARKDOWN_LINK_PATTERN = re.compile(
-        r'(!?)\[(.*?)]\(([^()]+(?:\([^()]*\)[^()]*)*)\)',
+        r'(?<!\w)'
+        r'(!?)\[(.*?)\]\(([^()]+(?:\([^()]*\)[^()]*)*)\)',
         re.MULTILINE
     )
 
@@ -36,7 +38,11 @@ class LinkExtractor(BaseLinkExtractor):
     def _get_links_from_line(self, line_number: int, line_content: str) -> Iterator[Link]:
         for matched_line in self.MARKDOWN_LINK_PATTERN.finditer(line_content):
             uri: str = matched_line.group(3).strip()
-            link_type: LinkType = self._get_link_type(matched_line)
+            link_type: LinkType | None = self._get_link_type(matched_line)
+
+            if link_type is None:
+                continue
+
             anchor: str | None = self._get_anchor(uri)
 
             yield Link(
@@ -48,9 +54,13 @@ class LinkExtractor(BaseLinkExtractor):
             )
 
     @staticmethod
-    def _get_link_type(matched_line: re.Match[str]) -> LinkType:
+    def _get_link_type(matched_line: re.Match[str]) -> LinkType | None:
         is_image = matched_line.group(1) == '!'
         uri = matched_line.group(3).strip()
+
+        if uri.startswith(('?:', '(?:', '[^', '(?!')):
+            log.debug('URI "%s" is not a link', uri)
+            return None
 
         if is_image:
             return LinkType.IMAGE

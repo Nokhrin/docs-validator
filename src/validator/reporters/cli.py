@@ -126,9 +126,14 @@ class CLIReporter(BaseReporter):
 
         error_issues = [issue for issue in issues if issue.severity_level == SeverityLevel.ERROR]
         if error_issues:
+            error_issues_sorted = sorted(
+                error_issues,
+                key=lambda x: (str(x.src_file.path), x.link.line_number if x.link else 0)
+            )
+
             lines.append('')
             lines.append(self._colorize('Error Summary:', TermColor.BOLD))
-            for issue in error_issues:
+            for issue in error_issues_sorted:
                 lines.append(self._format_issue_line(issue))
             lines.append('')
 
