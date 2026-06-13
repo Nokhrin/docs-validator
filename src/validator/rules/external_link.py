@@ -3,7 +3,7 @@ from collections import defaultdict
 from concurrent.futures import as_completed
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, ParseResult
 
 import requests
 from requests import RequestException
@@ -33,12 +33,11 @@ class ExternalLinkValidator(BaseValidator):
         else:
             self.hosts_to_ignore = []
 
-    def _is_host_ignored(self, uri: str) -> bool:
-        hostname_to_verify = urlparse(uri).hostname.lower()
-        if not hostname_to_verify:
-            return False
-        return any(hostname_to_verify == hostname_to_ignore or hostname_to_verify.endswith(f'.{hostname_to_ignore}')
-                   for hostname_to_ignore in self.hosts_to_ignore)
+    def _is_host_ignored(self, hostname_to_verify: str) -> bool:
+        for hostname_to_ignore in self.hosts_to_ignore:
+            if hostname_to_verify == hostname_to_ignore or hostname_to_verify.endswith(f'.{hostname_to_ignore}'):
+                return True
+        return False
 
     def _check_single_link(
             self,
@@ -99,7 +98,12 @@ class ExternalLinkValidator(BaseValidator):
             for link in doc_file.links_out:
                 if not link.is_external:
                     continue
-                if self._is_host_ignored(link.uri):
+
+                uri_parsed: ParseResult = urlparse(link.uri)
+                if uri_parsed.scheme not in ('http', 'https'):
+                    continue
+
+                if self._is_host_ignored(uri_parsed.hostname):
                     ignored_count += 1
                     continue
                 targets_by_file[doc_file.path].append(link)
