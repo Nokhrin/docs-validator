@@ -2,12 +2,12 @@ import json
 from io import StringIO
 from pathlib import Path
 
-from validator.core.models import DocumentationFile, ValidationIssue, IssueType, SeverityLevel, LinkStatistics, \
+from docs_validator.core.models import DocumentationFile, ValidationIssue, IssueType, SeverityLevel, LinkStatistics, \
     LinkType, Link
-from validator.reporters import HTMLReporter, CLIReporter
-from validator.reporters.cli import TermColor
-from validator.reporters.json import file_to_dict, files_to_json, link_to_dict
-from validator.reporters.markdown import MarkdownReporter
+from docs_validator.reporters import HTMLReporter, CLIReporter
+from docs_validator.reporters.cli import TermColor
+from docs_validator.reporters.json import file_to_dict, files_to_json, link_to_dict
+from docs_validator.reporters.markdown import MarkdownReporter
 
 
 class TestMarkdownReporter:

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from validator.core.connectivity_graph import ConnectivityGraph
-from validator.core.models import DocumentationFile, Link, LinkType
+from docs_validator.core.connectivity_graph import ConnectivityGraph
+from docs_validator.core.models import DocumentationFile, Link, LinkType
 
 
 class TestConnectivityGraph:

@@ -12,3 +12,17 @@ python3 -m pytest -vv --tb=short \
     --cov-report=xml \
     --cov-fail-under=70 \
     tests/
+
+echo "Running documentation validation..."
+docs_validator scan --validate --fail-on-error
+
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+    echo ""
+    echo "Documentation validation failed. Fix errors before committing."
+    echo "   Use 'git commit --no-verify' to skip validation"
+    exit 1
+fi
+
+echo "Documentation validation passed"
+exit 0

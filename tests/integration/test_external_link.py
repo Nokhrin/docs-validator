@@ -3,8 +3,8 @@ from pathlib import Path
 import requests
 import responses
 
-from validator.core.models import DocumentationFile, Link, LinkType, SeverityLevel, IssueType
-from validator.rules import ExternalLinkValidator
+from docs_validator.core.models import DocumentationFile, Link, LinkType, SeverityLevel, IssueType
+from docs_validator.rules import ExternalLinkValidator
 
 
 class TestExternalLinkValidatorValidate:

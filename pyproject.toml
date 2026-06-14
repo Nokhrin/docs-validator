@@ -1,9 +1,9 @@
 [project]
-name = "docs-validator"
+name = "docs_validator"
 version = "0.0.1"
 requires-python = ">=3.13"
 readme = "README.md"
-keywords = ["documentation", "links", "validator", "markdown"]
+keywords = ["documentation", "links", "docs_validator", "markdown"]
 dependencies = [
     "networkx==3.6.1",
     "requests==2.34.2",
@@ -29,7 +29,7 @@ dev = [
 ]
 
 [project.scripts]
-docs-validator = "validator.cli:main"
+docs_validator = "docs_validator.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -40,6 +40,10 @@ addopts = [
     "-vv",
     "--tb=short",
     "--strict-markers",
+    "--cov=docs_validator",
+    "--cov-report=term",
+    "--cov-report=xml",
+    "--cov-fail-under=70",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

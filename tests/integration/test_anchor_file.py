@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from validator.core.models import DocumentationFile, Link, LinkType
-from validator.rules.anchor_link import AnchorLinkValidator
+from docs_validator.core.models import DocumentationFile, Link, LinkType
+from docs_validator.rules.anchor_link import AnchorLinkValidator
 
 
 def test_anchor_exists_in_target_file_not_source_generates_no_issue(tmp_path):

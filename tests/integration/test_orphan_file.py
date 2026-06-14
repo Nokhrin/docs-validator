@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from validator.core.models import DocumentationFile, IssueType
-from validator.rules import OrphanFileValidator
+from docs_validator.core.models import DocumentationFile, IssueType
+from docs_validator.rules import OrphanFileValidator
 
 
 class TestOrphanFileValidator:

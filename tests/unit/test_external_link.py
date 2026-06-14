@@ -4,8 +4,8 @@ import pytest
 import requests
 import responses
 
-from validator.core.models import DocumentationFile, Link, LinkType, SeverityLevel, IssueType
-from validator.rules.external_link import ExternalLinkValidator
+from docs_validator.core.models import DocumentationFile, Link, LinkType, SeverityLevel, IssueType
+from docs_validator.rules.external_link import ExternalLinkValidator
 
 
 class TestExternalLinkValidator:

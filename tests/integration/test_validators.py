@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from validator.core.models import IssueType, SeverityLevel, DocumentationFile, Link, LinkType
-from validator.rules import CircularDependencyValidator
-from validator.rules.broken_link import BrokenLinkValidator
-from validator.rules.orphan_file import OrphanFileValidator
+from docs_validator.core.models import IssueType, SeverityLevel, DocumentationFile, Link, LinkType
+from docs_validator.rules import CircularDependencyValidator
+from docs_validator.rules.broken_link import BrokenLinkValidator
+from docs_validator.rules.orphan_file import OrphanFileValidator
 
 
 class TestBrokenLinkValidator:

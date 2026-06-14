@@ -1,5 +1,5 @@
 from pathlib import Path
-from validator.core.models import (
+from docs_validator.core.models import (
     DocumentationFile, Link, LinkType,
     IssueType, SeverityLevel, ValidationIssue, ValidationResult
 )

@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from validator.core.markdown_extractor import LinkExtractor
-from validator.core.models import LinkType
+from docs_validator.core.markdown_extractor import LinkExtractor
+from docs_validator.core.models import LinkType
 
 
 @pytest.mark.parametrize(

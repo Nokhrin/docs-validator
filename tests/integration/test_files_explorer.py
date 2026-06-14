@@ -1,5 +1,5 @@
 from pathlib import Path
-from validator.core.explorer import FilesExplorer
+from docs_validator.core.explorer import FilesExplorer
 
 
 class TestFilesExplorer:

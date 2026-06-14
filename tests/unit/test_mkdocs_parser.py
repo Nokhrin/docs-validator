@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from validator.core.mkdocs_parser import get_nav_roots
+from docs_validator.core.mkdocs_parser import get_nav_roots
 
 
 class TestGetNavRoots:

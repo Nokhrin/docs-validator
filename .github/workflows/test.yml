@@ -44,25 +44,14 @@ jobs:
           python -m pip install --upgrade pip setuptools
           pip install -e ".[dev]"
 
-      - name: Run unit tests with coverage
+      - name: Run tests with coverage
         run: |
-          pytest tests/unit/ \
+          pytest tests/ \
             -v \
             --tb=short \
-            --cov=src/validator \
+            --cov=src/docs_validator \
             --cov-report=term \
-            --cov-report=xml \
-            --cov-append
-
-      - name: Run integration tests
-        run: |
-          pytest tests/integration/ \
-            -v \
-            --tb=short \
-            --cov=src/validator \
-            --cov-report=term \
-            --cov-report=xml \
-            --cov-append
+            --cov-report=xml
 
       - name: Check coverage threshold
         run: |

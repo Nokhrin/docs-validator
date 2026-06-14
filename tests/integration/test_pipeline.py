@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from validator.core.models import DocumentationFile
-from validator.pipeline import collect_links
+from docs_validator.core.models import DocumentationFile
+from docs_validator.pipeline import collect_links
 
 class TestPipeline:
 

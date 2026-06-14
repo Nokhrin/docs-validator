@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from validator.config import ValidatorConfig, load_config_from_toml
+from docs_validator.config import ValidatorConfig, load_config_from_toml
 
 
 class TestConfig:
@@ -21,9 +21,9 @@ class TestConfig:
         assert config.is_skip_external == False
 
     def test_load_config_from_toml_arguments_valid(self, tmp_path: Path):
-        config_file = tmp_path / '.docs-validator.toml'
+        config_file = tmp_path / '.docs_validator.toml'
         config_file.write_text(f"""
-        [validator]
+        [docs_validator]
         path_to_explore = "{tmp_path.resolve()}/docs"
         exclude_patterns = [".git", "node_modules"]
         log_level = "debug"
@@ -49,9 +49,9 @@ class TestConfig:
         assert config.is_skip_external == False
 
     def test_load_config_from_toml_with_unknown_fields_raises_error(self, tmp_path):
-        config_file = tmp_path / '.docs-validator.toml'
+        config_file = tmp_path / '.docs_validator.toml'
         config_file.write_text("""
-[validator]
+[docs_validator]
 log_level = "debug"
 external_parsing_timeout_sec = 10
 """)
@@ -59,9 +59,9 @@ external_parsing_timeout_sec = 10
             load_config_from_toml(config_file)
 
     def test_load_config_from_toml_with_typo_in_field_name_raises_error(self, tmp_path):
-        config_file = tmp_path / '.docs-validator.toml'
+        config_file = tmp_path / '.docs_validator.toml'
         config_file.write_text("""
-[validator]
+[docs_validator]
 validate_external_anchors = true
 external_anchor_parsing_timeout_sec = 10
 """)
@@ -69,9 +69,9 @@ external_anchor_parsing_timeout_sec = 10
             load_config_from_toml(config_file)
 
     def test_load_config_from_toml_valid_fields_no_error(self, tmp_path):
-        config_file = tmp_path / '.docs-validator.toml'
+        config_file = tmp_path / '.docs_validator.toml'
         config_file.write_text("""
-[validator]
+[docs_validator]
 validate_external_anchors = true
 external_anchor_timeout_sec = 10
 """)

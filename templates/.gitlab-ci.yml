@@ -1,0 +1,50 @@
+.install_docs_validator:
+  image: python:3.13-slim
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends git
+    - pip install git+https://github.com/Nokhrin/docs-validator.git
+
+.install_mkdocs:
+  image: python:3.13-slim
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends git
+    - pip install -r requirements.txt
+
+validate:
+  stage: build
+  extends: .install_docs_validator
+  script:
+    - docs_validator scan . --validate --fail-on-error --report markdown --output docs-validation-report.md
+    - python3 scripts/validate_metadata.py | tee metadata-validation-report.md
+  artifacts:
+    paths:
+      - docs-validation-report.md
+      - metadata-validation-report.md
+    expire_in: 1 week
+    when: always
+  rules:
+    - changes:
+        - "**/*.md"
+        - "**/*.markdown"
+        - "**/*.asc"
+        - "**/*.adoc"
+        - ".gitlab-ci.yml"
+        - ".docs_validator.toml"
+        - "scripts/validate_metadata.py"
+    - when: manual
+
+pages:
+  stage: deploy
+  extends: .install_mkdocs
+  needs: ["validate"]
+  script:
+    - mkdocs build --clean --site-dir public
+    - test -d public && echo "Build successful" || exit 1
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+    - when: manual

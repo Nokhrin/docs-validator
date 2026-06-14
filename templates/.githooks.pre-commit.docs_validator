@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e
+
+if [ ! -d ".venv" ]; then
+    echo "Error: Virtual environment .venv not found" >&2
+    echo "Run: python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt" >&2
+    exit 1
+fi
+
+source .venv/bin/activate
+echo "Running documentation validation..."
+docs_validator scan docs/ --validate --fail-on-error
+
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+    echo ""
+    echo "Documentation validation failed. Fix errors before committing."
+    echo "   Use 'git commit --no-verify' to skip validation"
+    exit 1
+fi
+
+echo "Documentation validation passed"
+exit 0

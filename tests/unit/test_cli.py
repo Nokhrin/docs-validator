@@ -1,16 +1,16 @@
 from argparse import Namespace
 from pathlib import Path
 
-from validator.cli import create_parser, execute_scan, main
+from docs_validator.cli import create_parser, execute_scan, main
 
 
 class TestCli:
     def test_execute_scan_delegates_and_handles_output(self, mocker):
-        mock_load = mocker.patch('validator.cli.load_configuration')
-        mock_run = mocker.patch('validator.cli.run_validation')
-        mock_cli_reporter = mocker.patch('validator.cli.CLIReporter')
-        mock_md_reporter = mocker.patch('validator.cli.MarkdownReporter')
-        mock_write = mocker.patch('validator.cli.Path.write_text')
+        mock_load = mocker.patch('docs_validator.cli.load_configuration')
+        mock_run = mocker.patch('docs_validator.cli.run_validation')
+        mock_cli_reporter = mocker.patch('docs_validator.cli.CLIReporter')
+        mock_md_reporter = mocker.patch('docs_validator.cli.MarkdownReporter')
+        mock_write = mocker.patch('docs_validator.cli.Path.write_text')
 
         mock_config = mocker.MagicMock(
             output_file=mocker.MagicMock(),
@@ -60,8 +60,8 @@ class TestCli:
         assert args.command == 'scan'
 
     def test_main_dispatches_scan(self, mocker):
-        mock_parser = mocker.patch('validator.cli.create_parser')
-        mock_scan = mocker.patch('validator.cli.execute_scan', return_value=1)
+        mock_parser = mocker.patch('docs_validator.cli.create_parser')
+        mock_scan = mocker.patch('docs_validator.cli.execute_scan', return_value=1)
 
         mock_parser.return_value.parse_args.return_value = Namespace(command='scan')
         assert main() == 1
