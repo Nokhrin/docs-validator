@@ -97,29 +97,12 @@ Add the following configuration to your `.gitlab-ci.yml`:
 
 ```yaml
 .install_docs_validator:
+  image: python:3.13-slim
   before_script:
+    - apt-get update && apt-get install -y --no-install-recommends git
     - pip install git+https://github.com/Nokhrin/docs-validator.git
 
 validate_docs:
-  stage: build
-  extends: .install_docs_validator
-  script:
-    - docs-validator scan . --validate --fail-on-error --report markdown --output docs-validation-report.md
-  artifacts:
-    paths:
-      - docs-validation-report.md
-    expire_in: 1 week
-    when: on_failure
-  rules:
-    - changes:
-        - "/*.md"
-        - "/*.markdown"
-        - "/*.asc"
-        - "/*.adoc"
-        - ".gitlab-ci.yml"
-        - ".docs-validator.toml"
-
-validate_docs_manual:
   stage: build
   extends: .install_docs_validator
   script:
@@ -137,9 +120,15 @@ validate_docs_manual:
   variables:
     TARGET_PATH: "."
     FAIL_ON_ERROR: "true"
-  when: manual
   rules:
-    - when: always
+    - changes:
+        - "**/*.md"
+        - "**/*.markdown"
+        - "**/*.asc"
+        - "**/*.adoc"
+        - ".gitlab-ci.yml"
+        - ".docs-validator.toml"
+    - when: manual
 ```
 
 ### Step 2: Verify Execution
