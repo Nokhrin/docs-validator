@@ -19,7 +19,13 @@ class BrokenLinkValidator(BaseValidator):
                     continue
 
                 source_abs = root_dir / link.parent_file
-                target_path = (source_abs.parent / link.target_file).resolve()
+
+                if str(link.target_file).startswith('/'):
+                    log.debug('Path to target %s is absolute', str(link.target_file))
+                    target_path = (root_dir / str(link.target_file)[1:]).resolve()
+                else:
+                    target_path = (source_abs.parent / link.target_file).resolve()
+
                 if not target_path.exists():
                     log.debug(f'Target file not found: {link.target_file} for link {link}')
                     issues.append(ValidationIssue(

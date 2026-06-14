@@ -13,10 +13,23 @@ from validator.rules import BaseValidator
 
 log = logging.getLogger(__name__)
 
+GUARANTEED_ERROR_CODES = {404, 410}
+
+BROWSER_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+}
+
 
 class ExternalLinkValidator(BaseValidator):
-    """Checks the availability of resources via external links."""
-
     def __init__(
             self,
             external_timeout_sec: int = 10,
@@ -45,49 +58,59 @@ class ExternalLinkValidator(BaseValidator):
             src_file: DocumentationFile,
             session: requests.Session
     ) -> ValidationIssue | None:
+        log.debug('Processing link: %s', link.uri)
         try:
+            log.debug('Stage 1: HEAD request (fast, checks headers only)')
             resp = session.head(
                 link.uri,
                 timeout=self.external_timeout_sec,
                 allow_redirects=True,
             )
-            if resp.status_code == 405:
+
+            if resp.status_code >= 400 and resp.status_code:
+                log.debug('Stage 2: Retry with GET (HEAD returned %s)', resp.status_code)
                 resp = session.get(
                     link.uri,
                     timeout=self.external_timeout_sec,
                     allow_redirects=True,
+                    stream=True,
                 )
                 resp.close()
 
-            if resp.status_code >= 400:
-                is_bot_blocked = resp.status_code in (
-                    403, 406, 429,
-                    503, 520, 521, 522, 523, 524, 525,
-                )
-                severity = SeverityLevel.WARNING if is_bot_blocked else SeverityLevel.ERROR
+            if resp.status_code < 400:
+                log.debug('Success')
+                return None
 
-                message = (
-                    f'Possible WAF/bot block ({resp.status_code}): {link.uri}'
-                    if is_bot_blocked
-                    else f'External resource unavailable ({resp.status_code}): {link.uri}'
-                )
-
+            if resp.status_code in GUARANTEED_ERROR_CODES:
+                log.debug('Guaranteed error (resource definitely missing)')
                 return ValidationIssue(
                     issue_type=IssueType.EXTERNAL_UNREACHABLE,
-                    severity_level=severity,
+                    severity_level=SeverityLevel.ERROR,
                     src_file=src_file,
                     link=link,
-                    message=message,
-                    suggestion='Verify manually or add to hosts_to_ignore' if is_bot_blocked else 'Check URL availability or update the link',
+                    message=f'External resource not found ({resp.status_code}): {link.uri}',
+                    suggestion='Check URL availability or update the link',
+                )
+
+            else:
+                log.debug('Ambiguous error (WAF, timeout, server error) -> Manual verification')
+                return ValidationIssue(
+                    issue_type=IssueType.EXTERNAL_UNREACHABLE,
+                    severity_level=SeverityLevel.WARNING,
+                    src_file=src_file,
+                    link=link,
+                    message=f'Manual verification required ({resp.status_code}): {link.uri}',
+                    suggestion='Verify manually or add to hosts_to_ignore',
                 )
 
         except RequestException as err:
+            log.debug('Network error -> Manual verification')
             return ValidationIssue(
                 issue_type=IssueType.EXTERNAL_UNREACHABLE,
-                severity_level=SeverityLevel.ERROR,
+                severity_level=SeverityLevel.WARNING,
                 src_file=src_file,
                 link=link,
-                message=f'Connection error: {link.uri}\n{err}',
+                message=f'Connection error, manual verification required: {link.uri}\n{err}',
                 suggestion='Check the URL and network connection',
             )
 
@@ -112,22 +135,21 @@ class ExternalLinkValidator(BaseValidator):
                 targets_by_file[doc_file.path].append(link)
 
         if ignored_count:
-            log.info('Links excluded by hosts_to_ignore: %d', ignored_count)
+            log.debug('Links excluded by hosts_to_ignore: %d', ignored_count)
         if not targets_by_file:
-            log.info('No external links found')
+            log.debug('No external links found')
             return []
 
         total_links = sum(len(links) for links in targets_by_file.values())
-        log.info('Starting external link check: %d links in %d files', total_links, len(targets_by_file))
+        log.debug('Starting external link check: %d links in %d files', total_links, len(targets_by_file))
 
         issues: list[ValidationIssue] = []
 
         with requests.Session() as session, ThreadPoolExecutor(max_workers=self.max_threads_number) as executor:
-            session.headers.update({
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            })
+            session.headers.update(BROWSER_HEADERS)
+
             for file_path, links in targets_by_file.items():
-                log.info('Checking file: %s (%d external links)', file_path, len(links))
+                log.debug('Checking file: %s (%d external links)', file_path, len(links))
                 doc_file = files_to_validate[file_path]
 
                 file_futures = [
@@ -140,7 +162,7 @@ class ExternalLinkValidator(BaseValidator):
                     if issue:
                         issues.append(issue)
 
-                log.info('Check completed: %s', file_path)
+                log.debug('Check completed: %s', file_path)
 
-        log.info('External link check completed. Issues found: %d', len(issues))
+        log.debug('External link check completed. Issues found: %d', len(issues))
         return issues

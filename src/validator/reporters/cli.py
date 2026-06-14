@@ -124,6 +124,16 @@ class CLIReporter(BaseReporter):
         lines.append(f'External links: {link_stat.external_total} (broken: {link_stat.external_broken})')
         lines.append('')
 
+        # === Manual Verification Required ===
+        warning_issues = [issue for issue in issues if issue.severity_level == SeverityLevel.WARNING]
+        if warning_issues:
+            lines.append('')
+            lines.append(self._colorize('Manual Verification Required:', TermColor.BOLD))
+            for issue in warning_issues:
+                lines.append(self._format_issue_line(issue))
+            lines.append('')
+
+        # === Error Summary ===
         error_issues = [issue for issue in issues if issue.severity_level == SeverityLevel.ERROR]
         if error_issues:
             error_issues_sorted = sorted(

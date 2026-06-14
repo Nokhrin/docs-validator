@@ -22,13 +22,18 @@ class AnchorLinkValidator(BaseValidator):
                     continue
 
                 target_uri_without_anchor = link.uri.split('#')[0]
-                target_file_path = (root_dir / target_uri_without_anchor).resolve()
 
-                if not target_file_path.exists():
+                if str(link.target_file).startswith('/'):
+                    log.debug('Path to target %s is absolute', str(link.target_file))
+                    target_path = (root_dir / str(link.target_file)[1:]).resolve()
+                else:
+                    target_path = (root_dir.parent / link.target_file).resolve()
+
+                if not target_path.exists():
                     log.debug('File does not exist => issue of BrokenLinkValidator')
                     continue
 
-                if not self._has_anchor(target_file_path, link.anchor):
+                if not self._has_anchor(target_path, link.anchor):
                     issues.append(
                         ValidationIssue(
                             issue_type=IssueType.MISSING_ANCHOR,

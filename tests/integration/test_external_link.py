@@ -57,6 +57,7 @@ class TestExternalLinkValidatorValidate:
     def test_validate_external_link_unreachable_issue_created(self):
         url = 'https://example.com/missing'
         responses.add(responses.HEAD, url, status=404)
+        responses.add(responses.GET, url, status=404)
         validator = ExternalLinkValidator()
         link = Link(uri=url, link_type=LinkType.EXTERNAL, parent_file=Path('test.md'), line_number=1)
         file = DocumentationFile(path=Path('test.md'), title='Test', links_out={link})
@@ -70,6 +71,7 @@ class TestExternalLinkValidatorValidate:
     def test_validate_external_link_connection_error_issue_created(self):
         url = 'https://example.com/timeout'
         responses.add(responses.HEAD, url, body=requests.exceptions.ConnectionError('DNS fail'))
+        responses.add(responses.GET, url, body=requests.exceptions.ConnectionError('DNS fail'))
         validator = ExternalLinkValidator()
         link = Link(uri=url, link_type=LinkType.EXTERNAL, parent_file=Path('test.md'), line_number=1)
         file = DocumentationFile(path=Path('test.md'), title='Test', links_out={link})
@@ -77,7 +79,7 @@ class TestExternalLinkValidatorValidate:
         issues = validator.validate(files, Path('/tmp'))
         assert len(issues) == 1
         assert issues[0].issue_type == IssueType.EXTERNAL_UNREACHABLE
-        assert issues[0].severity_level == SeverityLevel.ERROR
+        assert issues[0].severity_level == SeverityLevel.WARNING
 
     @responses.activate
     def test_validate_internal_links_skipped_no_requests(self):

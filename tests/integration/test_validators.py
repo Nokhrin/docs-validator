@@ -8,6 +8,31 @@ from validator.rules.orphan_file import OrphanFileValidator
 
 class TestBrokenLinkValidator:
 
+    def test_broken_link_validator_absolute_path_from_root(self, tmp_path: Path):
+        (tmp_path / 'CONTRIBUTING.md').write_text('# Contributing')
+        (tmp_path / 'doc').mkdir()
+        (tmp_path / 'doc' / 'index.md').write_text('[Contributing](/CONTRIBUTING.md)')
+
+        link = Link(
+            uri='/CONTRIBUTING.md',
+            link_type=LinkType.INTERNAL,
+            parent_file=Path('doc/index.md'),
+            line_number=1
+        )
+
+        files = {
+            Path('doc/index.md'): DocumentationFile(
+                path=Path('doc/index.md'),
+                title='Index',
+                links_out={link}
+            )
+        }
+
+        validator = BrokenLinkValidator()
+        issues = validator.validate(files, tmp_path)
+
+        assert len(issues) == 0
+
     def test_broken_link_validator_validate_valid_link_returns_zero_issues(self, tmp_path: Path):
         (tmp_path / 'README.md').write_text('[VALID-LINK-NO-ANCHOR](./guide.md)')
         (tmp_path / 'guide.md').write_text('# Guide')
