@@ -140,8 +140,11 @@ def execute_scan(args: argparse.Namespace) -> int:
         }
         reporter = reporters.get(validation_config.report_format, reporters['markdown'])
         content = reporter.report(files, issues, stats)
-        Path(validation_config.output_file).write_text(content, encoding='utf-8')
 
+        output_path = Path(validation_config.output_file).resolve()
+        output_path.write_text(content, encoding='utf-8')
+
+        print(f"\nReport successfully generated: {output_path}")
     return exit_code
 
 

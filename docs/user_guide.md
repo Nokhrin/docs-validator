@@ -29,7 +29,6 @@ docs_validator --help
 ## GitHub installation
 
 ```shell
-cd ~/projects/playbook_markdown_validation/
 python3 -m venv .venv
 source .venv/bin/activate
 pip install git+https://github.com/Nokhrin/docs-validator.git
@@ -38,39 +37,51 @@ docs_validator --help
 
 # Validating docs
 
-### Setup project under test
-Example: https://github.com/avito-tech/playbook
-Fork
+### Setup system to test
+Example
+Source: https://github.com/avito-tech/playbook
+Fork: https://github.com/Nokhrin/playbook
 Clone
 ```shell
 mkdir -p "$HOME/projects/"
+cd "$HOME/projects/"
 git clone git@github.com:Nokhrin/playbook.git playbook_markdown_validation
-DOCS_DIR="."
+cd playbook_markdown_validation
+python3 -m venv .venv
+source .venv/bin/activate
+pip install git+https://github.com/Nokhrin/docs-validator.git
+docs_validator --help
 ```
 
-### Validation Without Reporting
+### Validation: result in stdout
 ```shell
-docs_validator scan $DOCS_DIR
+docs_validator scan
 ```
 
-### Generate Markdown Report
+### Validation: result in md
 ```shell
-docs_validator scan $DOCS_DIR --report markdown --output /tmp/playbook_markdown_validation.md
+TS=$(date +%Y%m%d_%H%M%S)
+docs_validator scan --report markdown --output /tmp/playbook_markdown_validation_$TS.md
+less /tmp/playbook_markdown_validation_$TS.md
 ```
 
-### Generate Interactive HTML Report
+### Validation: result in html
 ```shell
-docs_validator scan $DOCS_DIR --report html --output /tmp/playbook_markdown_validation.html
+TS=$(date +%Y%m%d_%H%M%S)
+docs_validator scan --report html --output /tmp/playbook_markdown_validation_$TS.html
+less /tmp/playbook_markdown_validation_$TS.html
 ```
 
-### Skip External Link Verification
+### Validation: Skip External Link Verification
 ```shell
-docs_validator scan $DOCS_DIR --skip-external
+docs_validator scan --skip-external
 ```
 
-### Local Validation via pre-commit Hook
+### Validation: run via pre-commit Hook
 
-Note: The hook requires dependencies from `[dev]` extras. Install them with:
+Note: The hook requires
+- python environment
+- dependencies from `[dev]` extras. Install them with:
 ```shell
 pip install -e ".[dev]"
 ```
@@ -89,12 +100,16 @@ git config core.hooksPath .githooks
 
 ### CI/CD Integration
 GitHub/GitLab actions examples:
-- [github workflow](../templates/.github_workflows.docs_validation.yml)
+- [github workflow](../templates/.github.workflows.docs_validation.yml)
 - [.gitlab-ci](../templates/.gitlab-ci.yml)
 
-Local verification:
 ```shell
-docs_validator scan $DOCS_DIR --validate --fail-on-error
+cd "$HOME/projects/playbook_markdown_validation"
+mkdir -p ".github/workflows/"
+cp ../docs_validator/templates/.github.workflows.docs_validation.yml .github/workflows/docs_validation.yml
+git add .github/workflows/docs_validation.yml
+git ci -m "add docs_validation github action"
+git push
 ```
 
 ### Using a Configuration File
