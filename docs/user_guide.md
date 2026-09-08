@@ -106,8 +106,9 @@ GitHub/GitLab actions examples:
 ```shell
 cd "$HOME/projects/playbook_markdown_validation"
 mkdir -p ".github/workflows/"
-cp ../docs_validator/templates/.github.workflows.docs_validation.yml .github/workflows/docs_validation.yml
-git add .github/workflows/docs_validation.yml
+# Скачать шаблон
+curl -o .github/workflows/docs-validation.yml https://raw.githubusercontent.com/Nokhrin/docs-validator/main/templates/.github.workflows.docs_validation.yml
+git add .github/workflows/docs-validation.yml
 git ci -m "add docs_validation github action"
 git push
 ```
