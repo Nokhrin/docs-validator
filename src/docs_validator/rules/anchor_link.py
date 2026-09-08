@@ -15,32 +15,39 @@ class AnchorLinkValidator(BaseValidator):
         log.debug('Starting anchor check, total files: %d', len(files_to_validate))
         issues: list[ValidationIssue] = []
 
+        root_dir_abs = root_dir.resolve()
+
         for file_path, doc_file in files_to_validate.items():
             for link in doc_file.links_out:
                 if link.link_type != LinkType.INTERNAL or not link.anchor:
                     log.debug('Link is not internal or does not has an anchor')
                     continue
 
-                target_uri_without_anchor = link.uri.split('#')[0]
+                source_abs = (root_dir_abs/link.parent_file).resolve()
 
                 if str(link.target_file).startswith('/'):
                     log.debug('Path to target %s is absolute', str(link.target_file))
-                    target_path = (root_dir / str(link.target_file)[1:]).resolve()
+                    target_path = (root_dir_abs / str(link.target_file)[1:]).resolve()
                 else:
-                    target_path = (root_dir.parent / link.target_file).resolve()
+                    target_path = (source_abs.parent / link.target_file).resolve()
 
                 if not target_path.exists():
                     log.debug('File does not exist => issue of BrokenLinkValidator')
                     continue
 
                 if not self._has_anchor(target_path, link.anchor):
+                    try:
+                        rel_target=target_path.relative_to(root_dir_abs)
+                    except ValueError:
+                        rel_target = target_path
+
                     issues.append(
                         ValidationIssue(
                             issue_type=IssueType.MISSING_ANCHOR,
                             severity_level=SeverityLevel.ERROR,
                             src_file=doc_file,
                             link=link,
-                            message=f'Anchor "{link.anchor}" not found in file {target_file_path.relative_to(root_dir)}',
+                            message=f'Anchor "{link.anchor}" not found in file {rel_target}',
                             suggestion='Check the anchor name or add the anchor to the target file',
                         )
                     )
