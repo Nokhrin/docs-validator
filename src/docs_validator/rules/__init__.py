@@ -7,11 +7,11 @@ from docs_validator.rules.external_link import ExternalLinkValidator
 from docs_validator.rules.orphan_file import OrphanFileValidator
 
 __all__ = [
-    'BaseValidator',
-    'AnchorLinkValidator',
-    'BrokenLinkValidator',
-    'OrphanFileValidator',
-    'CircularDependencyValidator',
-    'ExternalLinkValidator',
-    'ExternalAnchorValidator',
+    "BaseValidator",
+    "AnchorLinkValidator",
+    "BrokenLinkValidator",
+    "OrphanFileValidator",
+    "CircularDependencyValidator",
+    "ExternalLinkValidator",
+    "ExternalAnchorValidator",
 ]

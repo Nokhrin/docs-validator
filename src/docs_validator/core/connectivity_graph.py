@@ -9,8 +9,12 @@ from docs_validator.core.models import DocumentationFile, Link
 
 log = logging.getLogger(__name__)
 DEFAULT_ROOT_FILES = {
-    'README.md', 'README.rst', 'README.txt',
-    'index.md', 'index.html', 'index.rst',
+    "README.md",
+    "README.rst",
+    "README.txt",
+    "index.md",
+    "index.html",
+    "index.rst",
 }
 
 
@@ -95,7 +99,7 @@ class ConnectivityGraph:
         try:
             cycles = list(nx.simple_cycles(self._graph))
         except ValueError as err:
-            log.warning('Ошибка при поиске циклов в графе: %s', err)
+            log.warning("Ошибка при поиске циклов в графе: %s", err)
         return cycles
 
     @property

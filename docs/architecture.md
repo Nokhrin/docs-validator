@@ -4,23 +4,23 @@
 
 ```mermaid
 flowchart TD
-    subgraph External Actors
-        User[Developer / Maintainer]
-        CI[CI/CD Pipeline]
+    subgraph external["External Actors"]
+        User["Developer / Maintainer"]
+        CI["CI/CD Pipeline"]
     end
 
-    subgraph Documentation Link Validator
-        Validator[Documentation Link Validator]
+    subgraph validator_system["Documentation Link Validator"]
+        Validator["Documentation Link Validator"]
     end
 
-    subgraph Input Data
-        MarkdownRepo[Markdown Documentation Repository]
+    subgraph input_data["Input Data"]
+        MarkdownRepo["Markdown Documentation Repository"]
     end
 
-    subgraph Output Data
-        CLIReport[CLI Report]
-        FileReports[File Reports: Markdown, HTML, JSON]
-        CIStatus[CI Exit Status]
+    subgraph output_data["Output Data"]
+        CLIReport["CLI Report"]
+        FileReports["File Reports:<br/>Markdown, HTML, JSON"]
+        CIStatus["CI Exit Status"]
     end
 
     User -->|Maintains| MarkdownRepo
@@ -46,49 +46,50 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    subgraph Core ["Core Engine"]
+    subgraph core["Core Engine"]
         direction TB
-        Explorer[FilesExplorer\nFile discovery & filtering]
-        Extractor[LinkExtractor\nRegex-based link parsing]
-        Graph[ConnectivityGraph\nNetworkX dependency graph]
-        MkDocs[MkDocsParser\nNavigation root extraction]
-        
+
+        Explorer["FilesExplorer<br/>File discovery & filtering"]
+        Extractor["LinkExtractor<br/>Regex-based link parsing"]
+        Graph["ConnectivityGraph<br/>NetworkX dependency graph"]
+        MkDocs["MkDocsParser<br/>Navigation root extraction"]
+
         Explorer --> Extractor --> Graph
         MkDocs -.-> Graph
     end
 
-    subgraph Validators ["Validation Rules"]
+    subgraph validators["Validation Rules"]
         direction LR
-        V1[BrokenLinkValidator]
-        V2[OrphanFileValidator]
-        V3[AnchorLinkValidator]
-        V4[CircularDependencyValidator]
-        V5[ExternalLinkValidator]
+
+        V1["BrokenLinkValidator"]
+        V2["OrphanFileValidator"]
+        V3["AnchorLinkValidator"]
+        V4["CircularDependencyValidator"]
+        V5["ExternalLinkValidator"]
     end
 
-    subgraph Reporters ["Reporting Layer"]
+    subgraph reporters["Reporting Layer"]
         direction TB
-        R1[CLIReporter]
-        R2[MarkdownReporter]
-        R3[HTMLReporter]
-        R4[JSONReporter]
+
+        R1["CLIReporter"]
+        R2["MarkdownReporter"]
+        R3["HTMLReporter"]
+        R4["JSONReporter"]
     end
 
-    subgraph Orchestration ["Orchestration & Config"]
-        Pipeline[Validation Pipeline]
-        Config[ValidatorConfig]
+    subgraph orchestration["Orchestration & Config"]
+        Pipeline["Validation Pipeline"]
+        Config["ValidatorConfig"]
     end
 
-    %% Connections
     Graph --> V1 & V2 & V3 & V4 & V5
     V1 & V2 & V3 & V4 & V5 --> Pipeline
     Pipeline --> R1 & R2 & R3 & R4
-    
+
     Config --> Pipeline
     Config -.-> Explorer
     Config -.-> V5
 
-    %% Styling
     classDef core fill:#E3F2FD,stroke:#2E86AB,stroke-width:2px,color:#333
     classDef validators fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#333
     classDef reporters fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#333

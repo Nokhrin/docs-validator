@@ -1,15 +1,28 @@
 #!/bin/bash
 set -e
 
-if [ ! -d ".venv" ]; then
-    echo "Error: Virtual environment .venv not found" >&2
-    echo "Run: python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt" >&2
+if ! python3 -c "import pytest, pytest_cov" 2>/dev/null; then
+    echo "Error: pytest and pytest-cov are required. Install with: pip install -e '.[dev]'" >&2
     exit 1
 fi
 
-source .venv/bin/activate
-echo "Running documentation validation..."
-docs_validator scan docs/ --validate --fail-on-error
+echo "Checking code formatting"
+python -m black --verbose --diff --check src tests
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "Code formatting check failed. Run 'python -m black src tests' to fix."
+  exit 1
+fi
+
+python3 -m pytest -vv --tb=short \
+    --cov=src/validator \
+    --cov-report=term \
+    --cov-report=xml \
+    --cov-fail-under=70 \
+    tests/
+
+echo "Validating documentation"
+docs_validator scan --validate --fail-on-error
 
 exit_code=$?
 if [ $exit_code -ne 0 ]; then

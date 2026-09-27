@@ -1,4 +1,5 @@
 """Data models."""
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
@@ -14,6 +15,7 @@ class LinkType(Enum):
         ANCHOR: Section anchor
         IMAGE: Image link
     """
+
     INTERNAL = auto()
     EXTERNAL = auto()
     ANCHOR = auto()
@@ -21,9 +23,9 @@ class LinkType(Enum):
 
 
 class SeverityLevel(Enum):
-    ERROR = 'error'
-    WARNING = 'warning'
-    INFO = 'info'
+    ERROR = "error"
+    WARNING = "warning"
+    INFO = "info"
 
 
 class IssueType(Enum):
@@ -35,11 +37,12 @@ class IssueType(Enum):
         CIRCULAR_DEPENDENCY: Circular dependency between files
         EXTERNAL_UNREACHABLE: External resource is unreachable
     """
-    BROKEN_LINK = 'broken_link'
-    MISSING_ANCHOR = 'missing_anchor'
-    ORPHAN_FILE = 'orphan_file'
-    CIRCULAR_DEPENDENCY = 'circular'
-    EXTERNAL_UNREACHABLE = 'external_404'
+
+    BROKEN_LINK = "broken_link"
+    MISSING_ANCHOR = "missing_anchor"
+    ORPHAN_FILE = "orphan_file"
+    CIRCULAR_DEPENDENCY = "circular"
+    EXTERNAL_UNREACHABLE = "external_404"
 
 
 @dataclass(frozen=True)
@@ -52,6 +55,7 @@ class Link:
         line_number: Line number in the file
         anchor: Section anchor (optional)
     """
+
     uri: str
     link_type: LinkType
     parent_file: Path
@@ -70,7 +74,7 @@ class Link:
     def target_file(self) -> Path | None:
         if self.is_internal:
             if self.uri:
-                return Path(self.uri.split('#')[0])
+                return Path(self.uri.split("#")[0])
         return None
 
 
@@ -85,6 +89,7 @@ class DocumentationFile:
         word_count: Number of words in the file
         last_modified: Date of last modification
     """
+
     path: Path
     title: str
     links_out: set[Link] = field(default_factory=set)
@@ -108,11 +113,12 @@ class ValidationIssue:
         message: Error message text
         suggestion: Recommendation for fixing the issue
     """
+
     issue_type: IssueType
     severity_level: SeverityLevel
     src_file: DocumentationFile
     link: Optional[Link] = None
-    message: str = ''
+    message: str = ""
     suggestion: str | None = None
 
 
@@ -123,6 +129,7 @@ class ValidationResult:
         files_processed: Dictionary of processed files
         issues: List of detected issues
     """
+
     files_processed: dict[Path, DocumentationFile]
     issues: list[ValidationIssue]
 

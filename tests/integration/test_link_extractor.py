@@ -7,24 +7,30 @@ from docs_validator.core.models import LinkType
 
 
 @pytest.mark.parametrize(
-    'markdown_text, expected_uri, expected_is_image, expected_link_type, expected_count',
+    "markdown_text, expected_uri, expected_is_image, expected_link_type, expected_count",
     [
-        ('[text](url)', 'url', False, LinkType.INTERNAL, 1),
-        ('![alt](image.png)', 'image.png', True, LinkType.IMAGE, 1),
-        ('[text](https://example.com)', 'https://example.com', False, LinkType.EXTERNAL, 1),
-        ('[text](#section)', '#section', False, LinkType.ANCHOR, 1),
-        ('[text](./file.md)', './file.md', False, LinkType.INTERNAL, 1),
-        (r'\[not a link\](url)', None, False, None, 0),
-    ]
+        ("[text](url)", "url", False, LinkType.INTERNAL, 1),
+        ("![alt](image.png)", "image.png", True, LinkType.IMAGE, 1),
+        (
+            "[text](https://example.com)",
+            "https://example.com",
+            False,
+            LinkType.EXTERNAL,
+            1,
+        ),
+        ("[text](#section)", "#section", False, LinkType.ANCHOR, 1),
+        ("[text](./file.md)", "./file.md", False, LinkType.INTERNAL, 1),
+        (r"\[not a link\](url)", None, False, None, 0),
+    ],
 )
 def test_link_extractor_extracts_inline_links(
-        markdown_text,
-        expected_uri,
-        expected_is_image,
-        expected_link_type,
-        expected_count,
+    markdown_text,
+    expected_uri,
+    expected_is_image,
+    expected_link_type,
+    expected_count,
 ):
-    extractor = LinkExtractor(Path('test.md'))
+    extractor = LinkExtractor(Path("test.md"))
     links = list(extractor.get_links_from_file(markdown_text))
 
     assert len(links) == 1

@@ -1,10 +1,17 @@
 """HTML report generator."""
+
 from pathlib import Path
-from docs_validator.core.models import DocumentationFile, ValidationIssue, LinkStatistics
+from docs_validator.core.models import (
+    DocumentationFile,
+    ValidationIssue,
+    LinkStatistics,
+)
 from docs_validator.reporters.base import BaseReporter
+
 
 class HTMLReporter(BaseReporter):
     """Generates a report in HTML format."""
+
     def __init__(self, include_files: bool = False):
         self.include_files = include_files
 
@@ -16,36 +23,42 @@ class HTMLReporter(BaseReporter):
     ) -> str:
         int_total = link_stat.internal_total if link_stat else 0
         ext_total = link_stat.external_total if link_stat else 0
-        ext_valid = link_stat.external_total - link_stat.external_broken if link_stat else 0
+        ext_valid = (
+            link_stat.external_total - link_stat.external_broken if link_stat else 0
+        )
         ext_broken = link_stat.external_broken if link_stat else 0
 
         html_parts = [
-            '<!DOCTYPE html>',
+            "<!DOCTYPE html>",
             '<html lang="en">',
-            '<head>',
+            "<head>",
             '<meta charset="UTF-8">',
             '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
-            '<title>Documentation Validator Report</title>',
-            '<style>',
+            "<title>Documentation Validator Report</title>",
+            "<style>",
             self._get_styles(),
-            '</style>',
-            '</head>',
-            '<body>',
-            '<header>',
-            '<h1>Documentation Validator Report</h1>',
-            '</header>',
-            '<main>',
-            self._render_summary(files, issues, int_total, ext_total, ext_valid, ext_broken),
+            "</style>",
+            "</head>",
+            "<body>",
+            "<header>",
+            "<h1>Documentation Validator Report</h1>",
+            "</header>",
+            "<main>",
+            self._render_summary(
+                files, issues, int_total, ext_total, ext_valid, ext_broken
+            ),
             self._render_issues(issues),
         ]
         if self.include_files:
             html_parts.append(self._render_files(files))
-        html_parts.extend([
-            '</main>',
-            '</body>',
-            '</html>',
-        ])
-        return '\n'.join(html_parts)
+        html_parts.extend(
+            [
+                "</main>",
+                "</body>",
+                "</html>",
+            ]
+        )
+        return "\n".join(html_parts)
 
     @staticmethod
     def _get_styles() -> str:
@@ -70,7 +83,15 @@ class HTMLReporter(BaseReporter):
         .stat-value { font-size: 24px; font-weight: bold; color: #2E86AB; }
         """
 
-    def _render_summary(self, files: dict[Path, DocumentationFile], issues: list[ValidationIssue], internal_total: int, external_total: int, external_valid: int, external_broken: int) -> str:
+    def _render_summary(
+        self,
+        files: dict[Path, DocumentationFile],
+        issues: list[ValidationIssue],
+        internal_total: int,
+        external_total: int,
+        external_valid: int,
+        external_broken: int,
+    ) -> str:
         total_files = len(files)
         total_links = sum(len(f.links_out) for f in files.values())
         return f"""

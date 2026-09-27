@@ -5,11 +5,12 @@ from docs_validator.core.base_extractor import BaseLinkExtractor
 from docs_validator.core.markdown_extractor import LinkExtractor
 
 _EXTRACTOR_REGISTRY: dict[str, type[BaseLinkExtractor]] = {
-    '.md': LinkExtractor,
-    '.markdown': LinkExtractor,
-    '.adoc': AsciiDocLinkExtractor,
-    '.asc': AsciiDocLinkExtractor,
+    ".md": LinkExtractor,
+    ".markdown": LinkExtractor,
+    ".adoc": AsciiDocLinkExtractor,
+    ".asc": AsciiDocLinkExtractor,
 }
+
 
 def get_extractor(source_file: Path) -> BaseLinkExtractor:
     """

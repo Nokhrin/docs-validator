@@ -5,9 +5,9 @@ from docs_validator.reporters.json import JSONReporter
 from docs_validator.reporters.markdown import MarkdownReporter
 
 __all__ = [
-    'BaseReporter',
-    'MarkdownReporter',
-    'HTMLReporter',
-    'JSONReporter',
-    'CLIReporter',
+    "BaseReporter",
+    "MarkdownReporter",
+    "HTMLReporter",
+    "JSONReporter",
+    "CLIReporter",
 ]

@@ -5,29 +5,29 @@ from docs_validator.rules.anchor_link import AnchorLinkValidator
 
 
 def test_anchor_exists_in_target_file_not_source_generates_no_issue(tmp_path):
-    target_file_path = tmp_path / 'target.md'
-    target_file_path.write_text('# Header\n## performance-review\nContent.\n')
+    target_file_path = tmp_path / "target.md"
+    target_file_path.write_text("# Header\n## performance-review\nContent.\n")
 
-    source_file_path = tmp_path / 'source.md'
-    source_content = '[Link](./target.md#performance-review)\n'
+    source_file_path = tmp_path / "source.md"
+    source_content = "[Link](./target.md#performance-review)\n"
     source_file_path.write_text(source_content)
 
-    target_doc_file = DocumentationFile(path=Path('target.md'), title='Target')
-    source_doc_file = DocumentationFile(path=Path('source.md'), title='Source')
+    target_doc_file = DocumentationFile(path=Path("target.md"), title="Target")
+    source_doc_file = DocumentationFile(path=Path("source.md"), title="Source")
 
     link = Link(
-        uri='./target.md#performance-review',
+        uri="./target.md#performance-review",
         link_type=LinkType.INTERNAL,
-        parent_file=Path('source.md'),
+        parent_file=Path("source.md"),
         line_number=1,
-        anchor='performance-review'
+        anchor="performance-review",
     )
 
     source_doc_file.links_out.add(link)
 
     files_to_validate = {
-        Path('target.md'): target_doc_file,
-        Path('source.md'): source_doc_file,
+        Path("target.md"): target_doc_file,
+        Path("source.md"): source_doc_file,
     }
 
     validator = AnchorLinkValidator()

@@ -3,47 +3,63 @@ from pathlib import Path
 
 from docs_validator.config import ValidatorConfig
 from docs_validator.core.models import (
-    ValidationIssue, SeverityLevel, IssueType, DocumentationFile, Link, LinkType
+    ValidationIssue,
+    SeverityLevel,
+    IssueType,
+    DocumentationFile,
+    Link,
+    LinkType,
 )
 from docs_validator.pipeline import (
-    load_configuration, run_validation, collect_issues,
-    aggregate_issue_statistics
+    load_configuration,
+    run_validation,
+    collect_issues,
+    aggregate_issue_statistics,
 )
 
 
 class TestPipeline:
     def test_load_configuration_priority(self, mocker):
-        mocker.patch('docs_validator.pipeline.Path.exists', return_value=True)
+        mocker.patch("docs_validator.pipeline.Path.exists", return_value=True)
         mocker.patch(
-            'docs_validator.pipeline.load_config_from_toml',
-            return_value=ValidatorConfig(report_format='json', is_validate=True)
+            "docs_validator.pipeline.load_config_from_toml",
+            return_value=ValidatorConfig(report_format="json", is_validate=True),
         )
 
         args = Namespace(
-            path_to_explore=Path('./docs'),
-            config=Path('./custom.toml'),
-            report_format='html',
-            is_validate=False
+            path_to_explore=Path("./docs"),
+            config=Path("./custom.toml"),
+            report_format="html",
+            is_validate=False,
         )
         cfg = load_configuration(args)
 
-        assert cfg.report_format == 'html'
+        assert cfg.report_format == "html"
         assert cfg.is_validate is False
-        assert cfg.path_to_explore == Path('./docs')
+        assert cfg.path_to_explore == Path("./docs")
 
     def test_run_validation_orchestration(self, mocker, tmp_path):
-        cfg = ValidatorConfig(path_to_explore=tmp_path, is_validate=True, is_skip_external=True)
-        mock_files = {Path('a.md'): mocker.MagicMock()}
+        cfg = ValidatorConfig(
+            path_to_explore=tmp_path, is_validate=True, is_skip_external=True
+        )
+        mock_files = {Path("a.md"): mocker.MagicMock()}
 
-        mock_explore = mocker.patch('docs_validator.pipeline.explore_files', return_value=mock_files)
-        mock_links = mocker.patch('docs_validator.pipeline.collect_links')
+        mock_explore = mocker.patch(
+            "docs_validator.pipeline.explore_files", return_value=mock_files
+        )
+        mock_links = mocker.patch("docs_validator.pipeline.collect_links")
 
         mock_issues_result = [mocker.MagicMock()]
-        mock_issues = mocker.patch('docs_validator.pipeline.collect_issues', return_value=mock_issues_result)
+        mock_issues = mocker.patch(
+            "docs_validator.pipeline.collect_issues", return_value=mock_issues_result
+        )
 
         mock_stats = mocker.MagicMock()
-        mock_agg = mocker.patch('docs_validator.pipeline.aggregate_issue_statistics', return_value=mock_stats)
-        mocker.patch('docs_validator.pipeline.get_exit_code', return_value=1)
+        mock_agg = mocker.patch(
+            "docs_validator.pipeline.aggregate_issue_statistics",
+            return_value=mock_stats,
+        )
+        mocker.patch("docs_validator.pipeline.get_exit_code", return_value=1)
 
         files, issues, stats, exit_code = run_validation(cfg)
 
@@ -58,31 +74,43 @@ class TestPipeline:
         assert exit_code == 1
 
     def test_collect_issues_respects_skip_external(self, mocker, tmp_path):
-        mock_external_cls = mocker.patch('docs_validator.pipeline.ExternalLinkValidator')
+        mock_external_cls = mocker.patch(
+            "docs_validator.pipeline.ExternalLinkValidator"
+        )
         mock_external_instance = mocker.MagicMock()
         mock_external_cls.return_value = mock_external_instance
 
-        mocker.patch('docs_validator.pipeline.CircularDependencyValidator')
-        mocker.patch('docs_validator.pipeline.AnchorLinkValidator')
-        mocker.patch('docs_validator.pipeline.OrphanFileValidator')
-        mocker.patch('docs_validator.pipeline.BrokenLinkValidator')
+        mocker.patch("docs_validator.pipeline.CircularDependencyValidator")
+        mocker.patch("docs_validator.pipeline.AnchorLinkValidator")
+        mocker.patch("docs_validator.pipeline.OrphanFileValidator")
+        mocker.patch("docs_validator.pipeline.BrokenLinkValidator")
 
-        files = {Path('a.md'): mocker.MagicMock()}
-        cfg_with_skip = ValidatorConfig(is_validate=True, is_skip_external=True, path_to_explore=tmp_path)
-        cfg_without_skip = ValidatorConfig(is_validate=True, is_skip_external=False, path_to_explore=tmp_path)
+        files = {Path("a.md"): mocker.MagicMock()}
+        cfg_with_skip = ValidatorConfig(
+            is_validate=True, is_skip_external=True, path_to_explore=tmp_path
+        )
+        cfg_without_skip = ValidatorConfig(
+            is_validate=True, is_skip_external=False, path_to_explore=tmp_path
+        )
 
         collect_issues(files, cfg_with_skip)
         collect_issues(files, cfg_without_skip)
 
-        mock_external_instance.validate.assert_called_once_with(files, cfg_without_skip.path_to_explore)
+        mock_external_instance.validate.assert_called_once_with(
+            files, cfg_without_skip.path_to_explore
+        )
 
     def test_aggregate_issue_statistics_pure(self):
-        broken_link = Link('./missing.md', LinkType.INTERNAL, Path('a.md'), 1)
-        valid_link = Link('./other.md', LinkType.INTERNAL, Path('a.md'), 2)
-        file_obj = DocumentationFile(path=Path('a.md'), title='A', links_out={broken_link, valid_link})
-        issue = ValidationIssue(IssueType.BROKEN_LINK, SeverityLevel.ERROR, file_obj, broken_link)
+        broken_link = Link("./missing.md", LinkType.INTERNAL, Path("a.md"), 1)
+        valid_link = Link("./other.md", LinkType.INTERNAL, Path("a.md"), 2)
+        file_obj = DocumentationFile(
+            path=Path("a.md"), title="A", links_out={broken_link, valid_link}
+        )
+        issue = ValidationIssue(
+            IssueType.BROKEN_LINK, SeverityLevel.ERROR, file_obj, broken_link
+        )
 
-        stats = aggregate_issue_statistics({Path('a.md'): file_obj}, [issue])
+        stats = aggregate_issue_statistics({Path("a.md"): file_obj}, [issue])
 
         assert stats.internal_total == 2
         assert stats.internal_broken == 1
