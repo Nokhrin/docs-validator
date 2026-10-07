@@ -1,11 +1,12 @@
-.git/
 .idea/
 .venv/
 .pytest_cache/
 __pycache__/
 *.egg-info/
-.run/
 .githooks/
+build/
+dist/
 *.iml
 .coverage
 coverage.xml
+*.bkp

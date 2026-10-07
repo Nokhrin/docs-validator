@@ -1,0 +1,23 @@
+validate:
+  stage: build
+  image: python:3.13-slim
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends git
+    - pip install git+https://github.com/Nokhrin/docs-validator.git
+  script:
+    - docs_validator scan . --validate --fail-on-error --report markdown --output docs-validation-report.md
+  artifacts:
+    paths:
+      - docs-validation-report.md
+    expire_in: 1 week
+    when: always
+  rules:
+    - changes:
+        - '**/*.md'
+        - '**/*.markdown'
+        - '**/*.asc'
+        - '**/*.adoc'
+        - '**/*.asciidoc'
+        - '.docs_validator.toml'
+        - '.gitlab-ci.yml'
+    - when: manual

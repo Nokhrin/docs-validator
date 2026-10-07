@@ -75,6 +75,20 @@ pip install -e ../docs_validator --upgrade
 
 ---
 
+### Verifying package content
+
+```shell
+python3 -m pip install --upgrade build
+python3 -m build --wheel --sdist --outdir dist/
+python3 -m zipfile -l dist/docs_validator-0.0.1-py3-none-any.whl | grep templates
+tar -tzf dist/docs_validator-0.0.1.tar.gz | grep templates
+pip install --force-reinstall dist/docs_validator-0.0.1-py3-none-any.whl
+pip show -f docs_validator | grep templates
+python3 -c "from importlib.resources import files; print([p.name for p in files('docs_validator.utils.templates').iterdir()])"
+```
+
+---
+
 ### PyCharm Pytest Configuration
 
 To configure pytest templates in PyCharm:
@@ -120,9 +134,9 @@ To verify the docs_validator's functionality on a real documentation project (e.
 2. Fill in the parameters:
 
    | Parameter             | Value                                                      |
-      |-----------------------|------------------------------------------------------------|
+            |-----------------------|------------------------------------------------------------|
    | Python interpreter    | Interpreter from the tested project's `.venv`              |
-   | Script path           | `$ProjectFileDir$/src/docs_validator/cli.py`                    |
+   | Script path           | `$ProjectFileDir$/src/docs_validator/cli.py`               |
    | Module name           | *(leave empty)*                                            |
    | Parameters            | `scan ../project_to_validate --validate --log-level debug` |
    | Working directory     | `$ProjectFileDir$/../project_to_validate`                  |
@@ -136,8 +150,8 @@ To verify the docs_validator's functionality on a real documentation project (e.
 1. Create a configuration: `Run` -> `Edit Configurations...` -> `+` -> `pytest`
 2. Parameters:
 
-   | Parameter             | Value                                                 |
-      |-----------------------|-------------------------------------------------------|
+| Parameter             | Value                                                 |
+|-----------------------|-------------------------------------------------------|
    | Name                  | `pytest unit tests`                                   |
    | Target                | `path/to/docs_validator/tests/unit/`                  |
    | Additional arguments  | `-vv --tb=short --color=yes -s --log-cli-level=DEBUG` |
