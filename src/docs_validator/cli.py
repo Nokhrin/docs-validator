@@ -13,13 +13,8 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
-from docs_validator.pipeline import load_configuration, run_validation
-from docs_validator.reporters import (
-    CLIReporter,
-    JSONReporter,
-    MarkdownReporter,
-    HTMLReporter,
-)
+from docs_validator.pipeline import execute_scan
+from docs_validator.utils.scaffold import execute_setup, SetupOptions
 
 log = logging.getLogger(__name__)
 
@@ -117,52 +112,91 @@ def create_parser() -> ArgumentParser:
         help="Skip external links verification",
     )
 
+    setup_parser = subparsers.add_parser(
+        name="setup",
+        help="Generate CI configuration, pre-commit hook, docs-validator config for the current repository.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Examples:
+  %(prog)s setup --github
+  %(prog)s setup --gitlab --force
+  %(prog)s setup --config --pre-commit
+""",
+    )
+
+    setup_parser.add_argument(
+        "--force",
+        action="store_true",
+        dest="is_force",
+        help="Overwrite existing files with generated files",
+    )
+
+    setup_parser.add_argument(
+        "--config",
+        required=False,
+        action="store_true",
+        dest="is_config",
+        help="Generates docs-validator config in repository root",
+    )
+
+    setup_parser.add_argument(
+        "--pre-commit",
+        required=False,
+        action="store_true",
+        dest="is_pre_commit",
+        help="Generate .githooks/pre-commit hook",
+    )
+
+    ci_group = setup_parser.add_mutually_exclusive_group()
+
+    ci_group.add_argument(
+        "--github",
+        required=False,
+        action="store_true",
+        dest="is_github",
+        help="Generates GitHub actions workflow script",
+    )
+
+    ci_group.add_argument(
+        "--gitlab",
+        required=False,
+        action="store_true",
+        dest="is_gitlab",
+        help="Generates GitLab CI workflow script",
+    )
+
     return parser
 
 
-def execute_scan(args: argparse.Namespace) -> int:
-    validation_config = load_configuration(args)
-
-    log_level = getattr(logging, validation_config.log_level.upper(), logging.WARNING)
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
-        stream=sys.stdout,
-        force=True,
+def _setup_options_from_namespace(args: argparse.Namespace) -> SetupOptions:
+    force: bool = getattr(args, "is_force", False)
+    config: bool = getattr(args, "is_config", False)
+    github: bool = getattr(args, "is_github", False)
+    gitlab: bool = getattr(args, "is_gitlab", False)
+    precommit: bool = getattr(args, "is_pre_commit", False)
+    return SetupOptions(
+        force=force,
+        config=config,
+        github=github,
+        gitlab=gitlab,
+        precommit=precommit,
     )
-
-    files, issues, stats, exit_code = run_validation(validation_config)
-
-    # Console output
-    CLIReporter(stream=sys.stdout).report(files, issues, stats)
-
-    # File output
-    if validation_config.output_file:
-        reporters = {
-            "json": JSONReporter(),
-            "markdown": MarkdownReporter(
-                include_files=validation_config.report_include_files
-            ),
-            "html": HTMLReporter(include_files=validation_config.report_include_files),
-        }
-        reporter = reporters.get(validation_config.report_format, reporters["markdown"])
-        content = reporter.report(files, issues, stats)
-
-        output_path = Path(validation_config.output_file).resolve()
-        output_path.write_text(content, encoding="utf-8")
-
-        print(f"\nReport successfully generated: {output_path}")
-    return exit_code
 
 
 def main() -> int:
     parser = create_parser()
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
 
     match args.command:
         case "scan":
             return execute_scan(args)
+        case "setup":
+            try:
+                options = _setup_options_from_namespace(args)
+                return execute_setup(options, stream=sys.stdout)
+            except ValueError as e:
+                log.error("Setup: %s", e)
+                return 1
+
         case _:
             log.error("Unknown command: %s", args.command)
             return 2

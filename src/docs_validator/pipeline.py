@@ -1,6 +1,8 @@
 """Execution orchestrator."""
 
+import argparse
 import logging
+import sys
 from argparse import Namespace
 from dataclasses import replace, fields
 from pathlib import Path
@@ -14,6 +16,12 @@ from docs_validator.core.models import (
     LinkStatistics,
     LinkType,
     Link,
+)
+from docs_validator.reporters import (
+    CLIReporter,
+    JSONReporter,
+    MarkdownReporter,
+    HTMLReporter,
 )
 from docs_validator.rules import (
     BrokenLinkValidator,
@@ -195,3 +203,39 @@ def run_validation(
     exit_code: int = get_exit_code(issues, config)
 
     return files, issues, stats, exit_code
+
+
+def execute_scan(args: argparse.Namespace) -> int:
+    validation_config = load_configuration(args)
+
+    log_level = getattr(logging, validation_config.log_level.upper(), logging.WARNING)
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+        stream=sys.stdout,
+        force=True,
+    )
+
+    files, issues, stats, exit_code = run_validation(validation_config)
+
+    # Console output
+    CLIReporter(stream=sys.stdout).report(files, issues, stats)
+
+    # File output
+    if validation_config.output_file:
+        reporters = {
+            "json": JSONReporter(),
+            "markdown": MarkdownReporter(
+                include_files=validation_config.report_include_files
+            ),
+            "html": HTMLReporter(include_files=validation_config.report_include_files),
+        }
+        reporter = reporters.get(validation_config.report_format, reporters["markdown"])
+        content = reporter.report(files, issues, stats)
+
+        output_path = Path(validation_config.output_file).resolve()
+        output_path.write_text(content, encoding="utf-8")
+
+        log.info(f"\nReport successfully generated: {output_path}")
+    return exit_code

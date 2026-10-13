@@ -12,7 +12,7 @@ from docs_validator.core.models import (
     Link,
 )
 from docs_validator.reporters import HTMLReporter, CLIReporter
-from docs_validator.reporters.cli import TermColor
+from docs_validator.reporters.console import TermColor
 from docs_validator.reporters.json import file_to_dict, files_to_json, link_to_dict
 from docs_validator.reporters.markdown import MarkdownReporter
 

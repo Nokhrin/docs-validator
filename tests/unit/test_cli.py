@@ -1,16 +1,17 @@
 from argparse import Namespace
 from pathlib import Path
 
-from docs_validator.cli import create_parser, execute_scan, main
+from docs_validator.cli import create_parser, main
+from docs_validator.pipeline import execute_scan
 
 
 class TestCli:
     def test_execute_scan_delegates_and_handles_output(self, mocker):
-        mock_load = mocker.patch("docs_validator.cli.load_configuration")
-        mock_run = mocker.patch("docs_validator.cli.run_validation")
-        mock_cli_reporter = mocker.patch("docs_validator.cli.CLIReporter")
-        mock_md_reporter = mocker.patch("docs_validator.cli.MarkdownReporter")
-        mock_write = mocker.patch("docs_validator.cli.Path.write_text")
+        mock_load = mocker.patch("docs_validator.pipeline.load_configuration")
+        mock_run = mocker.patch("docs_validator.pipeline.run_validation")
+        mock_cli_reporter = mocker.patch("docs_validator.pipeline.CLIReporter")
+        mock_md_reporter = mocker.patch("docs_validator.pipeline.MarkdownReporter")
+        mock_write = mocker.patch("docs_validator.pipeline.Path.write_text")
 
         mock_config = mocker.MagicMock(
             output_file=mocker.MagicMock(),

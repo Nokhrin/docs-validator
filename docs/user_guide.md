@@ -3,18 +3,21 @@
 # Installation
 
 ## Requirements
+
 - Python 3.13 or higher.
-- Install `docs_validator` directly into the target project that requires documentation link validation. This ensures seamless integration with the project's CI/CD pipeline and local development environment.
+- Install `docs_validator` directly into the target project that requires documentation link validation.
 
 ## Local installation
 
 Install for the docs-validator itself
+
 ```shell
 pip install -e .
 docs_validator --help
 ```
 
 Install for the system located in a sibling directory
+
 ```shell
 cd ~/projects/project_to_validate/
 python3 -m venv .venv
@@ -25,7 +28,6 @@ docs_validator --help
 
 > The `-e` flag creates symbolic links to `src/docs_validator`. Code changes apply instantly without reinstallation.
 
-
 ## GitHub installation
 
 ```shell
@@ -35,13 +37,19 @@ pip install git+https://github.com/Nokhrin/docs-validator.git
 docs_validator --help
 ```
 
+
+
+---
+
 # Validating docs
 
 ### Setup system to test
+
 Example
 Source: https://github.com/avito-tech/playbook
 Fork: https://github.com/Nokhrin/playbook
 Clone
+
 ```shell
 mkdir -p "$HOME/projects/"
 cd "$HOME/projects/"
@@ -54,11 +62,13 @@ docs_validator --help
 ```
 
 ### Validation: result in stdout
+
 ```shell
 docs_validator scan
 ```
 
 ### Validation: result in md
+
 ```shell
 TS=$(date +%Y%m%d_%H%M%S)
 docs_validator scan --report markdown --output /tmp/playbook_markdown_validation_$TS.md
@@ -66,6 +76,7 @@ less /tmp/playbook_markdown_validation_$TS.md
 ```
 
 ### Validation: result in html
+
 ```shell
 TS=$(date +%Y%m%d_%H%M%S)
 docs_validator scan --report html --output /tmp/playbook_markdown_validation_$TS.html
@@ -73,6 +84,7 @@ less /tmp/playbook_markdown_validation_$TS.html
 ```
 
 ### Validation: Skip External Link Verification
+
 ```shell
 docs_validator scan --skip-external
 ```
@@ -80,60 +92,39 @@ docs_validator scan --skip-external
 ### Validation: run via pre-commit Hook
 
 Note: The hook requires
+
 - python environment
 - dependencies from `[dev]` extras. Install them with:
+
 ```shell
 pip install -e ".[dev]"
 ```
 
-Create the hook file `.githooks/pre-commit`
-- [pre-commit](../templates/.githooks.pre-commit.docs_validator)
-
+### Git hook
+Create pre-commit script
 ```shell
-# setup
-chmod +x .githooks/pre-commit
-git config core.hooksPath .githooks
-# verify
-./.githooks/pre-commit
+docs-validator install --pre-commit 
 ```
-
 
 ### CI/CD Integration
-GitHub/GitLab actions examples:
-- [github workflow](../templates/.github.workflows.docs_validation.yml)
-- [.gitlab-ci](../templates/.gitlab-ci.yml)
+
+Create workflow scripts:
+```shell
+docs-validator install --github 
+```
 
 ```shell
-cd "$HOME/projects/playbook_markdown_validation"
-mkdir -p ".github/workflows/"
-# Скачать шаблон
-curl -o .github/workflows/docs-validation.yml https://raw.githubusercontent.com/Nokhrin/docs-validator/main/templates/.github.workflows.docs_validation.yml
-git add .github/workflows/docs-validation.yml
-git ci -m "add docs_validation github action"
-git push
+docs-validator install --gitlab 
 ```
+
 
 ### Using a Configuration File
-By default, the tool looks for the `.docs_validator.toml` file in the root directory of the project being scanned. Alternatively, you can specify a custom path using the `--config` flag.
 
-Example `infrastructure/.docs_validator.toml`:
-```shell
-cat > infrastructure/.docs_validator.toml << EOF
-[docs_validator]
-path_to_explore = '$DOCS_DIR'
-exclude_patterns = ['.git', 'node_modules', '*.tmp']
-log_level = 'warning'
-report_format = 'markdown'
-is_validate = true
-is_fail_on_error = true
-external_timeout_sec = 10
-max_threads_number = 5
-hosts_to_ignore = ['localhost', '127.0.0.1']
-is_skip_external = false
-EOF
-```
+By default, the tool looks for the `.docs_validator.toml` file in the root directory of the project being scanned.
+Alternatively, you can specify a custom path using the `--config` flag.
 
 Run with a custom configuration path:
+
 ```shell
 docs_validator scan --config infrastructure/.docs_validator.toml
 ```
